@@ -19,13 +19,18 @@ Route::get('/', function () {
 });
 
 
-Route::post('/course/create', function (Request $request) {
-    dd($request->all());
-});
+// Route::post('/course/create', function (Request $request) {
+//     dd($request->all());
+// });
 
 Route::get('/symlink', function (Request $request) {
+    // echo 'hi how are you';
     \Illuminate\Support\Facades\Artisan::call('storage:link');
 });
+
+// Route::get('/hi', function (Request $req) {
+//     echo 'hi how are you';
+// });
 
 Route::get('/php_info', function (Request $request) {
     // \Illuminate\Support\Facades\Artisan::call('storage:link');

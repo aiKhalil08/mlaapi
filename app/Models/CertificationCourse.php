@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Course;
 
-class OffshoreCourse extends Course
+class CertificationCourse extends Course
 {
     // use HasFactory;
     // public $timestamps = false;

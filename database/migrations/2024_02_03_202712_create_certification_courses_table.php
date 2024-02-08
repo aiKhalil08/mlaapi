@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('certificate_courses', function (Blueprint $table) {
+        Schema::create('certification_courses', function (Blueprint $table) {
             $table->id();
             $table->string('code', 15);
             $table->string('title', 255);
@@ -35,6 +35,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('certificate_courses');
+        Schema::dropIfExists('certification_courses');
     }
 };
