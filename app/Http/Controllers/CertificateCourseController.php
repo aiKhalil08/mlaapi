@@ -12,11 +12,16 @@ class CertificateCourseController extends Controller
     public function store(Request $request) {
         $course = null;
         DB::transaction(function () use ($request, &$course) {
-            $name = strtolower(str_replace(' ', '_', $request->code));
-            $image_name = $name.'.'.$request->image->extension();
-            // $schedule_name = $name.'.'.$request->schedule->extension();
-            $image_url = $request->image->storeAs('/public/images/certificate_courses', $image_name);
-            $schedule_url = '';#$request->schedule->storeAs('/public/schedule/certificate_courses', $schedule_name);
+            if ($request->hasFile('image')) {
+                $name = strtolower(str_replace(' ', '_', $request->code));
+                $image_name = $name.'.'.$request->image->extension();
+                $image_url = $request->image->storeAs('/public/images/certificate_courses', $image_name);
+            } else $image_url = '';
+            if ($request->hasFile('schedule')) {
+                $name = strtolower(str_replace(' ', '_', $request->code));
+                $schedule_name = $name.'.'.$request->schedule->extension();
+                $schedule_url = $request->schedule->storeAs('/public/schedule/certificate_courses', $schedule_name);
+            } else $schedule_url = '';
             $course = CertificateCourse::create(['code'=>$request->code, 'title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>json_encode($request->objectives), 'attendees'=>json_encode($request->attendees), 'prerequisites'=>json_encode($request->prerequisites), 'modules'=>json_encode($request->modules), 'date'=>json_encode($request->date), 'price'=>json_encode($request->price), 'discount'=>$request->discount, 'image_url'=>substr($image_url, 7), 'schedule_url'=>substr($schedule_url, 7)]);
         });
         return $course;

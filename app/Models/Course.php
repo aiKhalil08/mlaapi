@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class Course extends Model
@@ -31,4 +32,26 @@ class Course extends Model
         return request()->schemeAndHttpHost().'/storage/'.$string;
         // return route('storage/'.$string);
     }
+
+    // protected function modules(): Attribute
+    // {
+    //     return Attribute::make(
+    //         get: fn ($value) => $value,
+    //         set: function($value) {
+    //             if (sizeof($value) == 1 && ($value[0]['overview'] == null || $value[0]['overview'] == null)) return null;
+    //             else return json_encode($value);
+    //         },
+    //     );
+    // }
+    // protected function date(): Attribute
+    // {
+    //     return Attribute::make(
+    //         get: fn ($value) => $value,
+    //         set: function($value) {
+    //             // var_dump($value); return null;
+    //             if ($value['start'] == null) return null;
+    //             else return json_encode($value);
+    //         },
+    //     );
+    // }
 }
