@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('resources', function (Blueprint $table) {
+        Schema::create('otps', function (Blueprint $table) {
             $table->id();
-            $table->string('heading', 255);
-            $table->text('content')->nullable();
-            $table->string('image_url', 255)->nullable();
-            $table->unique('heading');
+            $table->string('code', 6);
+            $table->string('owner_type');
+            $table->bigInt('owner_id');
+            $table->timestamp('created_at');
+            $table->timestamp('expires_at');
+            $table->unique(['owner_type', 'owner_id'], 'type_id_unique');
         });
     }
 
@@ -25,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('resources');
+        Schema::dropIfExists('o_t_p_s');
     }
 };

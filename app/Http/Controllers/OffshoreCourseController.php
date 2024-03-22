@@ -76,4 +76,9 @@ class OffshoreCourseController extends Controller
         $course = OffshoreCourse::where('title', $course_title)->first();
         return response()->json($course, 200);
     }
+
+
+    public function get_names() {
+        return OffshoreCourse::select(DB::raw('title as name'))->get();
+    }
 }

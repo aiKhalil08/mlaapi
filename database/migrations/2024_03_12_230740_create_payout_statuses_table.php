@@ -11,12 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('resources', function (Blueprint $table) {
+        Schema::create('payout_statuses', function (Blueprint $table) {
             $table->id();
-            $table->string('heading', 255);
-            $table->text('content')->nullable();
-            $table->string('image_url', 255)->nullable();
-            $table->unique('heading');
+            $table->string('status');
         });
     }
 
@@ -25,6 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('resources');
+        Schema::dropIfExists('payout_statuses');
     }
 };

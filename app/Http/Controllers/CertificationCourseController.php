@@ -77,4 +77,9 @@ class CertificationCourseController extends Controller
         $course = CertificationCourse::where('code', $course_code)->first();
         return response()->json($course, 200);
     }
+
+
+    public function get_names() {
+        return CertificationCourse::select(DB::raw('concat(code, " - ", title) as name'))->get();
+    }
 }

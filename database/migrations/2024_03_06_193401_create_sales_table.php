@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('resources', function (Blueprint $table) {
+        Schema::create('sales', function (Blueprint $table) {
             $table->id();
-            $table->string('heading', 255);
-            $table->text('content')->nullable();
-            $table->string('image_url', 255)->nullable();
-            $table->unique('heading');
+            $table->bigInt('student_id');
+            $table->bigInt('course_id');
+            $table->string('course_type');
+            $table->string('price');
+            $table->timestamp('date')->useCurrent();
         });
     }
 
@@ -25,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('resources');
+        Schema::dropIfExists('sales');
     }
 };

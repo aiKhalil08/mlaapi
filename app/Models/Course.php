@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\DB;
 
 class Course extends Model
 {
@@ -33,6 +35,11 @@ class Course extends Model
         // return route('storage/'.$string);
     }
 
+    public function carts(): MorphMany
+    {
+        return $this->morphMany(Cart::class, 'course');
+    }
+
     // protected function modules(): Attribute
     // {
     //     return Attribute::make(
@@ -54,4 +61,25 @@ class Course extends Model
     //         },
     //     );
     // }
+
+
+    public static function trending_courses() {
+        $courses = DB::select('select count(id) as number, course_type, course_id from carts group by course_type, course_id order by number desc limit 5');
+
+        $trending_courses = [];
+
+        if (count($courses) > 0) {
+            foreach($courses as $course) {
+                if ($course->course_type == 'App\Models\CertificateCourse') {
+                    $trending_courses[] = ['name' => CertificateCourse::where('id', $course->course_id)->select(['title', 'code'])->first(), 'type'=>'Certificate Course'];
+                } else if ($course->course_type == 'App\Models\CertificationCourse') {
+                    $trending_courses[] = ['name' => CertificationCourse::where('id', $course->course_id)->select(['title', 'code'])->first(), 'type'=>'Certification Course'];
+                } else if ($course->course_type == 'App\Models\OffshoreCourse') {
+                    $trending_courses[] = ['name' => OffshoreCourse::where('id', $course->course_id)->select(['title'])->first(), 'type'=>'Offshore Course'];
+                }
+            }
+        }
+
+        return $trending_courses;
+    }
 }

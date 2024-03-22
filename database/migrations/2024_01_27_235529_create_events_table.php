@@ -16,13 +16,14 @@ return new class extends Migration
             // $table->timestamps();
             $table->id();
             $table->string('name', 255);
-            $table->text('description');
+            $table->text('description')->nullable();
             // $table->json('eligible');
-            $table->json('date');
-            $table->enum('type', ['physical', 'virtual']);
-            $table->json('price');
-            $table->json('attendees');
-            $table->string('image_url', 255);
+            $table->json('date')->nullable();
+            $table->enum('type', ['physical', 'virtual'])->nullable();
+            $table->json('price')->nullable();
+            $table->json('attendees')->nullable();
+            $table->string('image_url', 255)->nullable();
+            $table->unique('name');
         });
     }
 

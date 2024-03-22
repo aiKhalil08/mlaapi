@@ -11,12 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('resources', function (Blueprint $table) {
-            $table->id();
-            $table->string('heading', 255);
-            $table->text('content')->nullable();
-            $table->string('image_url', 255)->nullable();
-            $table->unique('heading');
+        Schema::create('event_watchlist', function (Blueprint $table) {
+            $table->bigInteger('student_id');
+            $table->bigInteger('event_id');
         });
     }
 
@@ -25,6 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('resources');
+        Schema::dropIfExists('event_watchlist');
     }
 };

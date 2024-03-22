@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('resources', function (Blueprint $table) {
+        Schema::create('referrals', function (Blueprint $table) {
             $table->id();
-            $table->string('heading', 255);
-            $table->text('content')->nullable();
-            $table->string('image_url', 255)->nullable();
-            $table->unique('heading');
+            $table->bigInt('referrer_id')->unsigned();
+            $table->bigInt('code_id')->unsigned();
+            $table->bigInt('sale_id')->unsigned();
+            $table->string('commission');
         });
     }
 
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('resources');
+        Schema::dropIfExists('referrals');
     }
 };

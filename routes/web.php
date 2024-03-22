@@ -28,6 +28,14 @@ Route::get('/symlink', function (Request $request) {
     \Illuminate\Support\Facades\Artisan::call('storage:link');
 });
 
+Route::get('some', function () {
+    return ['Hi, you are here'];
+})->middleware(\App\Http\Middleware\Some::class);
+
+Route::post('somepost', function(Request $request) {
+    var_dump($request->cookies());
+})->middleware(\App\Http\Middleware\Some::class);
+
 // Route::get('/hi', function (Request $req) {
 //     echo 'hi how are you';
 // });
