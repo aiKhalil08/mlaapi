@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Sinergi\Token\StringGenerator;
+use Illuminate\Support\Facades\Storage;
 
 // use Illuminate\Database\Eloquent\Relations\MorphOne;
 
@@ -25,16 +26,57 @@ class Student extends Model implements Authenticatable, JWTSubject, CanReceiveOT
 
     public $timestamps = false;
     public $guarded = ['id'];
-    protected $hidden = ['id'];
+    protected $hidden = ['id', 'password'];
     // private string $generated_referral_code;
 
-    public function getActualImageUrlAttribute() {
+
+
+    public function send_welcome_email(): bool {
+
+        
+        $api_endpoint = 'https://mitiget.com.ng/mailerapi/message/singlemail';
+
+        $title = 'Welcome to Mitiget Learning Academy - Spark Your Potential!';
+        $message = view('emails.welcome', ['first_name'=>$this->first_name])->render();
+        
+        $data = [
+            'title' => $title,
+            
+            'message' => $message,
+            
+            'email' => $this->email,
+            
+            'companyemail' => env('COMPANY_EMAIL'),
+            
+            'companypassword' => env('COMPANY_PASSWORD'),
+        ];
+
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($api_endpoint, $data) {
+                
+                $response = \Illuminate\Support\Facades\Http::post($api_endpoint, $data);
+                
+                if (!$response->ok()) {
+                    throw new \Exception('couldn\'t send email');
+                }
+            });
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+
+    }
+
+
+
+    public function getImagePathAttribute() {
         return explode('storage/', $this->image_url)[1];
     }
 
     public function getImageUrlAttribute(string | null $string) {
         if (!$string) return null;
-        return request()->schemeAndHttpHost().'/storage/'.$string;
+        return Storage::url($string);
+        // return request()->schemeAndHttpHost().'/storage/'.$string;
     }
 
     public function getNameAttribute() {
@@ -119,10 +161,18 @@ class Student extends Model implements Authenticatable, JWTSubject, CanReceiveOT
     }
     
     /* retrieves latest referral code */
-    public function referral_code(): HasOne {
-        return $this->hasOne(ReferralCode::class)->latestOfMany();
+    public function getReferralCodeAttribute() {
+        // return $this->hasOne(ReferralCode::class)->latestOfMany();
+        $referral_code = $this->referral_codes()->where('validity', 1)->first();
+
+        if (!$referral_code) return null;
+        else return $referral_code;
     }
 
+
+    public function is_affiliate() {
+        return $this->referral_code != null;
+    }
 
     /**
      * Get all of the purchases for the Student
@@ -145,6 +195,29 @@ class Student extends Model implements Authenticatable, JWTSubject, CanReceiveOT
         return $this->through('referral_codes')->has('referrals');
     }
 
+
+    /**
+     * The cohorts that belong to the Student
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function cohorts(): BelongsToMany
+    {
+        return $this->belongsToMany(Cohort::class);
+    }
+
+
+    /**
+     * Get all of the certificates for the Student
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(Certificate::class);
+    }
+
+
     /**
      * Get all of the fulfillments for the Student
      *
@@ -155,10 +228,6 @@ class Student extends Model implements Authenticatable, JWTSubject, CanReceiveOT
         return $this->hasMany(Fulfillment::class);
     }
 
-
-    public function is_affiliate() {
-        return $this->referral_code != null;
-    }
 
     public function referral_code_has_expired() {
         if (!$this->is_affiliate()) return true;
@@ -218,7 +287,7 @@ class Student extends Model implements Authenticatable, JWTSubject, CanReceiveOT
 
         $certification_courses = DB::select('select course.code, course.title, concat(\''.request()->schemeAndHttpHost().'/storage/\',course.image_url) as image_url, json_length(course.modules) as number_of_modules from certification_courses as course inner join carts on carts.course_id = course.id and carts.student_id = ?', [$this->id]);
 
-        $offshore_courses = DB::select('select course.title, course.title, concat(\''.request()->schemeAndHttpHost().'/storage/\',course.image_url) as image_url, json_length(course.modules) as number_of_modules from offshore_courses as course inner join carts on carts.course_id = course.id and carts.student_id = ?', [$this->id]);
+        $offshore_courses = DB::select('select course.title, concat(\''.request()->schemeAndHttpHost().'/storage/\',course.image_url) as image_url, json_length(course.modules) as number_of_modules from offshore_courses as course inner join carts on carts.course_id = course.id and carts.student_id = ?', [$this->id]);
 
         $carted_courses = ['certificate_courses'=>$certificate_courses, 'certification_courses'=>$certification_courses, 'offshore_courses'=>$offshore_courses];
 
@@ -226,14 +295,14 @@ class Student extends Model implements Authenticatable, JWTSubject, CanReceiveOT
     }
 
 
-    public function get_carted_course($type, $identity) {
-        $type = explode('_', $type)[0];
-        $table = $type.'_courses';
-        $course_type = 'App\Models\\'.str()->ucfirst($type).'Course';
+    public function get_carted_course($category, $identity) {
+        $category = explode('_', $category)[0];
+        $table = $category.'_courses';
+        $course_type = 'App\Models\\'.str()->ucfirst($category).'Course';
         
-        if ($type == 'certificate' || $type == 'certification') {
+        if ($category == 'certificate' || $category == 'certification') {
             $statement = "select $table.code, $table.title, $table.modules, $table.overview, $table.objectives, $table.attendees, $table.prerequisites, concat('".request()->schemeAndHttpHost()."/storage/', $table.image_url) as image_url from $table inner join carts on $table.id = carts.course_id where carts.student_id = ? and $table.code = '$identity'";
-        } else if ($type == 'offshore') {
+        } else if ($category == 'offshore') {
             $statement = "select $table.title, $table.modules, $table.overview, $table.objectives, $table.attendees, $table.prerequisites, concat('".request()->schemeAndHttpHost()."/storage/', $table.image_url) as image_url from $table inner join carts on $table.id = carts.course_id where carts.student_id = ? and $table.title = '$identity'";
         }
         // $course = DB::select($statement, [$this->id]);
@@ -241,6 +310,8 @@ class Student extends Model implements Authenticatable, JWTSubject, CanReceiveOT
         if ($course = DB::select($statement, [$this->id])) return $course;
         else return false;
     }
+
+    
 
 
     public function carted_courses_titles() {
@@ -254,5 +325,12 @@ class Student extends Model implements Authenticatable, JWTSubject, CanReceiveOT
         $carted_courses = ['certificate_courses'=>$certificate_courses, 'certification_courses'=>$certification_courses, 'offshore_courses'=>$offshore_courses];
 
         return $carted_courses;
+    }
+
+
+    public static function get_affiliates() {
+        $affiliates = DB::select('select s.first_name, s.last_name, s.email, r.code referral_code from students s inner join referral_codes r on s .id = r.student_id where r.validity = 1');
+
+        return $affiliates;
     }
 }

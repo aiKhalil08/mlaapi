@@ -23,10 +23,10 @@ class SaleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'student_email' => ['required', 'email'],
-            'course_type' => ['required'],
-            'course_name' => ['required'],
-            'price' => ['required'],
+            // 'student_email' => ['required', 'email'],
+            // 'course_type' => ['required'],
+            // 'course_name' => ['required'],
+            // 'price' => ['required'],
         ];
     }
 }

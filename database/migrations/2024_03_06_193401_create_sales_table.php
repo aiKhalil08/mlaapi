@@ -14,8 +14,10 @@ return new class extends Migration
         Schema::create('sales', function (Blueprint $table) {
             $table->id();
             $table->bigInt('student_id');
-            $table->bigInt('course_id');
-            $table->string('course_type');
+            $table->bigInt('sale_type_id');
+            $table->bigInt('cohort_id')->nullable();
+            $table->bigInt('course_id')->nullable();
+            $table->string('course_type')->nullable();
             $table->string('price');
             $table->timestamp('date')->useCurrent();
         });

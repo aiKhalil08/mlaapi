@@ -31,6 +31,27 @@ class Sale extends Model
         return $this->morphTo();
     }
 
+
+    /**
+     * Get the cohort that owns the Sale
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function cohort(): BelongsTo
+    {
+        return $this->belongsTo(Cohort::class);
+    }
+
+    /**
+     * Get the saleType that owns the Sale
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function type(): BelongsTo
+    {
+        return $this->belongsTo(SaleType::class, 'sale_type_id');
+    }
+
     /**
      * Get the referral associated with the Sale
      *
@@ -43,7 +64,7 @@ class Sale extends Model
 
 
     public static function get_all() {
-        return DB::select('select sales.id, sales.price, sales.date, concat(students.first_name, " ", students.last_name) as student from sales inner join students on sales.student_id = students.id');
+        return DB::select('select sales.id, sales.price, sales.date, concat(students.first_name, " ", students.last_name) as student from sales inner join students on sales.student_id = students.id order by sales.date desc');
     }
 
 
@@ -53,23 +74,31 @@ class Sale extends Model
 
         
         if (!$sale) return null;
+
+        $sale_type = $sale->type->name;
         
         $buyer['name'] = $sale->student->name;
         
         $buyer['email'] = $sale->student->email;
-        
-        $bought_course = $sale->course;
-        
-        if ($bought_course instanceof CertificateCourse) {
-            $course['type'] = 'Certificate Course';
-            $course['name'] = $bought_course->title.' - '.$bought_course->code;
-        } else if ($bought_course instanceof CertificationCourse) {
-            $course['type'] = 'Certification Course';
-            $course['name'] = $bought_course->title.' - '.$bought_course->code;
-        } else if ($bought_course instanceof OffshoreCourse) {
-            $course['type'] = 'Certificate Course';
-            $course['name'] = $bought_course->title;
+
+        if ($sale_type == 'Cohort') {
+            $cohort['name'] = $sale->cohort->name;
+
+        } else {
+            $bought_course = $sale->course;
+            
+            if ($bought_course instanceof CertificateCourse) {
+                $course['type'] = 'Certificate Course';
+                $course['name'] = $bought_course->title.' - '.$bought_course->code;
+            } else if ($bought_course instanceof CertificationCourse) {
+                $course['type'] = 'Certification Course';
+                $course['name'] = $bought_course->title.' - '.$bought_course->code;
+            } else if ($bought_course instanceof OffshoreCourse) {
+                $course['type'] = 'Certificate Course';
+                $course['name'] = $bought_course->title;
+            }
         }
+        
         
         // var_dump($course); return null;
 
@@ -89,9 +118,14 @@ class Sale extends Model
             $affiliate['email'] = $referrer->email;
         }
 
+        $data = ['type'=>$sale_type, 'student'=>$buyer, 'price'=>$sale->price, 'date'=>$sale->date, 'affiliate'=>$affiliate];
+
+        if ($sale_type == 'Cohort') $data = [...$data, 'cohort'=>$cohort];
+        else if ($sale_type == 'Individual Course') $data = [...$data, 'course'=>$course];
 
 
-        return ['student'=>$buyer, 'price'=>$sale->price, 'date'=>$sale->date, 'affiliate'=>$affiliate, 'course'=>$course];
+
+        return $data;
     }
     
 }

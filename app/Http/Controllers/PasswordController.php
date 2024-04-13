@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Student;
 
@@ -52,11 +53,13 @@ class PasswordController extends Controller
         // return 'http://localhost:4200/reset-password?s='.$signature;
     }
 
-    private function compose_mail($email, $reset_link) {
+    private function compose_mail($first_name, $email, $reset_link) {
         return [
-            'title' => 'Password Reset Link',
+            'title' => 'Reset Your Password for MLA',
+
+            'message' => view('emails.forgot-password', ['first_name'=>$first_name, 'link'=>$reset_link])->render(),
             
-            'message' => '<p>Follow this link to reset your password: <a href=\''.$reset_link.'\'>Click here</a>.<p>Link is only valid for 30 minutes.',
+            // 'message' => '<p>Follow this link to reset your password: <a href=\''.$reset_link.'\'>Click here</a>.<p>Link is only valid for 30 minutes.',
             
             'email' => $email,
             
@@ -79,11 +82,11 @@ class PasswordController extends Controller
 
 
         try {
-            DB::transaction(function () use ($email, $type) {
+            DB::transaction(function () use ($user, $email, $type) {
                 $api_endpoint = 'https://mitiget.com.ng/mailerapi/message/singlemail';
                 $token = $this->generate_token();
                 $reset_link = $this->create_reset_link($email, $token, $type);
-                $data = $this->compose_mail($email, $reset_link);
+                $data = $this->compose_mail($user->first_name, $email, $reset_link);
                 $response = \Illuminate\Support\Facades\Http::post($api_endpoint, $data);
                 $this->insert_token_in_db(token: $token, email: $email, type: $type);
                 if (!$response->ok()) {
@@ -137,4 +140,5 @@ class PasswordController extends Controller
 
         return response()->json(['status'=>'failed', 'message'=>'Couldn\'t reset password'], 200);
     }
+
 }

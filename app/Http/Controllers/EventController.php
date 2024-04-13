@@ -10,53 +10,78 @@ use Illuminate\Support\Facades\DB;
 class EventController extends Controller
 {
     public function store(Request $request) {
-        $event = null;
-        DB::transaction(function () use ($request, &$event) {
-            if ($request->hasFile('image')) {
-                $name = strtolower(str_replace(' ', '_', $request->name));
-                $image_name = $name.'.'.$request->image->extension();
-                $image_url = $request->image->storeAs('/public/images/events', $image_name);
-            } else $image_url = '';
-            if ($request->type == 'physical') {
-                $price = ['currency'=>$request->input('price.currency'), 'amount'=>$request->input('price.amount.physical')];
-            } else {
-                $price = ['currency'=>$request->input('price.currency'), 'amount'=>$request->input('price.amount.virtual')];
-            }
-            $event = Event::create(['name'=>$request->name, 'description'=>$request->description, 'date'=>json_encode($request->date), 'type'=>$request->type, 'price'=>json_encode($price), 'attendees'=>json_encode($request->attendees), 'image_url'=>substr($image_url, 7),]);
-        });
-        return $event;
+
+        try {
+            $event = null;
+            DB::transaction(function () use ($request, &$event) {
+                if ($request->type == 'physical') {
+                    $price = ['currency'=>$request->input('price.currency'), 'amount'=>$request->input('price.amount.physical')];
+                } else {
+                    $price = ['currency'=>$request->input('price.currency'), 'amount'=>$request->input('price.amount.virtual')];
+                }
+
+                $attributes = ['name'=>$request->name, 'description'=>$request->description, 'date'=>json_encode($request->date), 'type'=>$request->type, 'price'=>json_encode($price), 'attendees'=>json_encode($request->attendees)];
+
+                if ($request->hasFile('image')) {
+                    $name = strtolower(str_replace(' ', '_', $request->name));
+                    $image_name = $name.'.'.$request->image->extension();
+                    $image_url = $request->image->storeAs('images/events', $image_name);
+                } else $image_url = 'images/events/event_placeholder_'.rand(1,3).'.jpg';
+                $attributes = [...$attributes, 'image_url'=>$image_url];
+
+                $event = Event::create($attributes);
+            });
+            return response()->json(['status'=>'success'], 200);
+            // return $course;
+        } catch (\Throwable $th) {
+            return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again.'], 200);
+        }
     }
 
 
     public function edit(Request $request, string $name) {
-        $event = Event::where('name', $name)->first();
-        DB::transaction(function () use ($request, &$event) {
-            if ($request->type == 'physical') {
-                $price = ['currency'=>$request->input('price.currency'), 'amount'=>$request->input('price.amount.physical')];
-            } else {
-                $price = ['currency'=>$request->input('price.currency'), 'amount'=>$request->input('price.amount.virtual')];
-            }
-            $name = strtolower(str_replace(' ', '_', $request->name));
-            $attributes = ['name'=>$request->name, 'description'=>$request->description, 'date'=>json_encode($request->date), 'type'=>$request->type, 'price'=>json_encode($price), 'attendees'=>json_encode($request->attendees)];
 
-            if ($request->hasFile('image')) {
-                $image_name = $name.'.'.$request->image->extension();
-                $image_url = $request->image->storeAs('/public/images/events', $image_name);
-                $attributes = [...$attributes, 'image_url'=>substr($image_url, 7)];
-            }
-            $event->update($attributes);
-        });
-        return $event;
+        try {
+            
+            $event = Event::where('name', $name)->first();
+            DB::transaction(function () use ($request, &$event) {
+                if ($request->type == 'physical') {
+                    $price = ['currency'=>$request->input('price.currency'), 'amount'=>$request->input('price.amount.physical')];
+                } else {
+                    $price = ['currency'=>$request->input('price.currency'), 'amount'=>$request->input('price.amount.virtual')];
+                }
+                $name = strtolower(str_replace(' ', '_', $request->name));
+                $attributes = ['name'=>$request->name, 'description'=>$request->description, 'date'=>json_encode($request->date), 'type'=>$request->type, 'price'=>json_encode($price), 'attendees'=>json_encode($request->attendees)];
+
+                if ($request->hasFile('image')) {
+                    $image_name = $name.'.'.$request->image->extension();
+                    $image_url = $request->image->storeAs('images/events', $image_name);
+                    $attributes = [...$attributes, 'image_url'=>$image_url];
+                }
+                $event->update($attributes);
+            });
+            return response()->json(['status'=>'success'], 200);
+        } catch (\Throwable $th) {
+            return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again.'], 200);
+        }
+
+
     }
 
     public function delete(Request $request, string $name) {
-        $event = Event::where('name', $name)->first();
-        DB::transaction(function () use ($request, &$event) {
-            $image_path = '/public/'.$event->actual_image_url;
-            $event->delete();
-            Storage::delete([$image_path]);
-        });
-        return response()->json(['status'=>'success'], 200,);
+
+        try {
+            
+            $event = Event::where('name', $name)->first();
+            DB::transaction(function () use ($request, &$event) {
+                if ($event->image_url) $image_path = $event->image_path;
+                $event->delete();
+                if ($event->image_url) Storage::delete([$image_path]);
+            });
+            return response()->json(['status'=>'success'], 200,);
+        } catch (\Throwable $th) {
+            return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again.'], 200);
+        }
     }
 
     public function get_list(Request $request, string $count) {
@@ -69,8 +94,14 @@ class EventController extends Controller
     }
 
     public function get(Request $request, string $name) {
+
         $event = Event::where('name', $name)->first();
-        return response()->json($event, 200);
+
+        if (!$event) return response()->json(['status'=>'failed', 'message'=>'No event with such name.'], 200);
+
+        return response()->json(['status'=>'success', 'event'=>$event], 200);
+
+    
     }
 
     // public function get_post(Request $request, string $heading) {

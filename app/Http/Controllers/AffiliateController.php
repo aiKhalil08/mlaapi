@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Referral;
+use App\Models\Student;
 use App\Models\ReferralCode;
+use Illuminate\Database\Eloquent\Builder;
 
 class AffiliateController extends Controller
 {
@@ -12,11 +14,12 @@ class AffiliateController extends Controller
         try {
             $student = auth()->user();
 
+            $student->referral_codes()->update(['validity'=>0]);
 
             // var_dump($student->generate_referral_code()); return null;
             $now = \Carbon\Carbon::now();
     
-            $student->referral_codes()->create(['code'=>$student->generate_referral_code(), 'expires_at'=>$now->addMonths(5)]);
+            $student->referral_codes()->create(['code'=>$student->generate_referral_code(), 'expires_at'=>$now->addMonths(5), 'validity'=>1]);
 
 
     
@@ -27,36 +30,48 @@ class AffiliateController extends Controller
         }
     }
 
-    // public function renew_referral_code(Request $request) {
-    //     try {
-    //         $student = auth()->user();
+    public function renew_referral_code(Request $request) {
+        try {
+            $student = auth()->user();
 
 
-    //         // var_dump($student->generate_referral_code()); return null;
-    //         $now = \Carbon\Carbon::now();
+            // var_dump($student->generate_referral_code()); return null;
+            $now = \Carbon\Carbon::now();
+
+            $student->referral_codes()->update(['validity'=>0]);
     
-    //         $student->referral_codes()->create(['code'=>$student->generate_referral_code(), 'expires_at'=>$now->addMonths(5)]);
+            $student->referral_codes()->create(['code'=>$student->generate_referral_code(), 'expires_at'=>$now->addMonths(5), 'validity'=>1]);
 
 
     
     
-    //         return response()->json(['status'=>'success', 'affiliate'=>base64_encode(json_encode(['is_affiliate'=>$student->is_affiliate(), 'referral_code'=>$student->referral_code->code, 'referral_code_expired'=>$student->referral_code_has_expired()]))], 200);
-    //     } catch (\Throwable $th) {
-    //         return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again'], 200);
-    //     }
-    // }
+            return response()->json(['status'=>'success', 'referral_code'=>$student->referral_code->code /* 'affiliate'=>base64_encode(json_encode(['is_affiliate'=>$student->is_affiliate(), 'referral_code'=>$student->referral_code->code, 'referral_code_expired'=>$student->referral_code_has_expired()])) */], 200);
+        } catch (\Throwable $th) {
+            return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again'], 200);
+        }
+    }
 
     public function load_affiliate_portal() {
         try {
             $student = auth()->user();
 
-            if (!$student->is_affiliate()) return response()->json(['status'=>'failed', 'message'=>'User is not an affiliate'], 200);
+            if (!$student->is_affiliate()) return response()->json(['status'=>'failed', 'message'=>'Not affiliate'], 200);
 
-
-            // // var_dump($student->generate_referral_code()); return null;
     
-            // $student->referral_codes()->create(['code'=>$student->generate_referral_code()]);
+    
+            return response()->json(['status'=>'success', 'affiliate_portal'=>$student->affiliate_portal()], 200);
+        } catch (\Throwable $th) {
+            return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again'], 200);
+        }
+    }
 
+    public function get(Request $request, string $email) {
+        try {
+            $student = Student::where('email', $email)->first();
+
+            if (!$student) return response()->json(['status'=>'failed', 'message'=>'User with given email not found'], 200);
+
+            if (!$student->is_affiliate()) return response()->json(['status'=>'failed', 'message'=>'User is not an affiliate'], 200);
 
     
     
@@ -74,8 +89,9 @@ class AffiliateController extends Controller
 
 
     public function fetch_affiliate(Request $request, string $code) {
+        // var_dump(auth()->payload());
         try {
-            $code = ReferralCode::where('code', $code)->first();
+            $code = ReferralCode::whereRaw('BINARY code = ?', [$code])->first();
 
             if (!$code) return response()->json(['status'=> 'failed', 'message'=> 'Invalid referral code'], 200);
 
@@ -90,5 +106,9 @@ class AffiliateController extends Controller
         } catch (\Throwable $th) {
             return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again.'], 200);
         }
+    }
+
+    public function get_all() {
+        return response()->json(['affiliates'=>Student::get_affiliates()], 200);
     }
 }

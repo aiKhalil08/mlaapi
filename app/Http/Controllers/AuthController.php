@@ -10,9 +10,12 @@ use App\Http\Requests\LoginRequest;
 use Tymon\JWTAuth\Facades\JWTFactory;
 use JWTAuth;
 use App\Models\Student;
+use App\Traits\Recaptcha;
 
 class AuthController extends Controller
 {
+    use Recaptcha;
+    
 
     public function admin_login(LoginRequest $request) {
         $guard = 'admin-jwt';
@@ -24,6 +27,14 @@ class AuthController extends Controller
     }
 
     public function login_one(LoginRequest $request, string $type) {
+
+        // return $this->validate_recaptcha();
+        $validate_recaptcha = $this->validate_recaptcha();
+
+        if ($validate_recaptcha[0] == 'failed') {
+            return response()->json(['status'=> 'failed', 'message'=> $validate_recaptcha[1]], 200,);
+        }
+
         $user = null;
         if ($type == 'student') {
             $user = Student::where('email', $request->email)->first();
@@ -102,7 +113,7 @@ class AuthController extends Controller
 
     protected function respondWithToken($token, $guard) {
         $user = Auth::guard($guard)->user();
-        $customClaims = ['first_name'=>$user->first_name, 'last_name'=>$user->last_name, 'email'=>$user->email,];
+        $customClaims = ['first_name'=>$user->first_name, 'last_name'=>$user->last_name, 'email'=>$user->email, 'role'=>$user->type];
         if ($user->type != 'admin') $customClaims = [...$customClaims, 'email_verified'=>$user->hasVerifiedEmail(), 'image_url'=>$user->image_url];
 
         $payload = JWTFactory::customClaims($customClaims)->make();
@@ -118,4 +129,21 @@ class AuthController extends Controller
 
         return response()->json($data, 200);
     }
+
+
+    public function confirm_admin_password(Request $request) {
+        $user = auth()->user();
+
+        if (Hash::check($request->password, $user->password)) return response()->json(['status'=>'success'], 200);
+        else return response()->json(['status'=>'failed'], 200);
+    }
+
+    public function confirm_student_password(Request $request) {
+        $user = auth()->user();
+
+        if (Hash::check($request->password, $user->password)) return response()->json(['status'=>'success'], 200);
+        else return response()->json(['status'=>'failed'], 200);
+    }
+
+    
 }

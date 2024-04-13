@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class Course extends Model
 {
@@ -16,16 +17,19 @@ class Course extends Model
     public $guarded = ['id'];
     protected $hidden = ['id'];
 
-    public function getActualImageUrlAttribute() {
+    public function getImagePathAttribute() {
         return explode('storage/', $this->image_url)[1];
     }
-    public function getActualScheduleUrlAttribute() {
-        return explode('storage/', $this->schedule_url)[1];
-    }
+    // public function getActualScheduleUrlAttribute() {
+    //     return explode('storage/', $this->schedule_url)[1];
+    // }
 
-    public function getImageUrlAttribute(string $string) {
+    public function getImageUrlAttribute(string | null $string) {
+        if (!$string) return null;
+        return Storage::url($string);
         // return 'http://localhost:8000/storage/'.$string;
-        return request()->schemeAndHttpHost().'/storage/'.$string;
+        // return request()->schemeAndHttpHost().'/storage/'.$string;
+        // return Storage::url($string);
         // return route('storage/'.$string);
     }
 
@@ -39,6 +43,24 @@ class Course extends Model
     {
         return $this->morphMany(Cart::class, 'course');
     }
+
+
+    // public function enrollments(): MorphMany
+    // {
+    //     return $this->morphMany(Sale::class, 'course');
+    // }
+
+    /**
+     * Get all of the certificates for the Student
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function certificates(): HasMany
+    {
+        return $this->morphMany(Certificate::class, 'course');
+    }
+
+
 
     // protected function modules(): Attribute
     // {

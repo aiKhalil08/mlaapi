@@ -16,6 +16,10 @@ class ShouldUseGuard
     public function handle(Request $request, Closure $next, string $type): Response
     {
         auth()->shouldUse($type);
+
+        if ($type == 'student-jwt' && (auth()->payload()['role'] != 'student')) return response()->json(['error'=>'Unauthorized'], 401);
+        if ($type == 'admin-jwt' && (auth()->payload()['role'] != 'admin')) return response()->json(['error'=>'Unauthorized'], 401);
+        
         return $next($request);
     }
 }

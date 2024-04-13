@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\Sale;
+use App\Models\Cohort;
 use App\Models\CertificateCourse;
 use App\Models\CertificationCourse;
 use App\Models\OffshoreCourse;
@@ -18,28 +19,44 @@ class SaleController extends Controller
     public function store(SaleRequest $request) {
         
         $course = null;
-        
-        $course_identity = trim(preg_split('/-(?=[^-]*$)/', $request->course_name)[0]);
+        $cohort = null;
 
+        $type = match ($request->sale_type) {
+             'cohort_sale'=> 1,
+             'individual_course_sale'=> 2,
+        };
+        
+        // $course_identity = trim(preg_split('/-(?=[^-]*$)/', $request->course_name)[0]);
         
         
-        
-        try {
+        // try {
+            
+            if ($type == 1) {
+                $cohort = Cohort::where('name', $request->cohort_name)->select('id')->first();
+
+                if (!$cohort) return response()->json(['status'=>'failed', 'message'=>'Could not find cohort with the given name'], 200);
+            } else if ($type == 2) {
+                $course = match ($request->course_type) {
+                    'Certificate Course' => CertificateCourse::where('code', $request->course_identity)->select('id')->first(),
+                    'Certification Course' => CertificationCourse::where('code', $request->course_identity)->select('id')->first(),
+                    'Offshore Course' => OffshoreCourse::where('title', $request->course_identity)->select('id')->first(),
+                };
+                
+                if (!$course) return response()->json(['status'=>'failed', 'message'=>'Could not find course with the given name'], 200);
+            }
+
+            // var_dump($cohort->id); return null;
             
             
-            $course = match ($request->course_type) {
-                'Certificate Course' => CertificateCourse::where('code', $course_identity)->first(),
-                'Certification Course' => CertificationCourse::where('code', $course_identity)->first(),
-                'Offshore Course' => OffshoreCourse::where('title', $course_identity)->first(),
-            };
-            
-            if (!$course) return response()->json(['status'=>'failed', 'message'=>'Could not find course with the given name'], 200);
-            
-            
-            DB::transaction(function () use ($request, $course) {
+            DB::transaction(function () use ($request, $course, $type, $cohort) {
                 $student = Student::where('email', $request->student_email)->first();
 
-                $sale = new Sale(['course_type'=>get_class($course), 'course_id'=>$course->id, 'price'=>$request->price]);
+                $attributes = ['sale_type_id'=>$type,'price'=>$request->price];
+
+                if ($type == 1) {$attributes = [...$attributes, 'cohort_id'=>$cohort->id];}
+                else if ($type == 2) {$attributes = [...$attributes, 'course_type'=>get_class($course), 'course_id'=>$course->id, ];}
+
+                $sale = new Sale($attributes);
 
                 $sale = $student->purchases()->save($sale);
                 
@@ -50,13 +67,52 @@ class SaleController extends Controller
                     $sale->referral()->save($referral);
                 }
 
+                // var_dump($sale->type); return null;
+
+                $this->notify_student($student, $sale);
+
             });
 
             return response()->json(['status'=>'success', 'message'=>'Sale added'], 200);
-        } catch (\Throwable $th) {
-            return response()->json(['status'=>'failed', 'message'=>'Could not add sale. Please try again later'], 200);
-        }
+        // } catch (\Throwable $th) {
+        //     return response()->json(['status'=>'failed', 'message'=>'Could not add sale. Please try again later'], 200);
+        // }
 
+    }
+
+    public function notify_student(Student $student, Sale $sale) {
+
+        $api_endpoint = 'https://mitiget.com.ng/mailerapi/message/singlemail';
+
+        $title = 'Congratulations on Your Purchase!';
+        $message = view('emails.purchase', ['sale'=>$sale])->render();
+
+
+        $data = [
+            'title' => $title,
+            
+            'message' => $message,
+            
+            'email' => $student->email,
+            
+            'companyemail' => env('COMPANY_EMAIL'),
+            
+            'companypassword' => env('COMPANY_PASSWORD'),
+        ];
+
+        // try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($api_endpoint, $data,) {
+                // var_dump('did you get here? yes');
+                $response = \Illuminate\Support\Facades\Http::post($api_endpoint, $data);
+                
+                // if (!$response->ok()) {
+                //     throw new \Exception('couldn\'t send email');
+                // }
+            });
+        //     return true;
+        // } catch (\Exception $e) {
+        //     return false;
+        // }
     }
 
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Storage;
 
 class Event extends Model
 {
@@ -14,14 +15,13 @@ class Event extends Model
     public $guarded = ['id'];
     protected $hidden = ['id'];
 
-    public function getActualImageUrlAttribute() {
+    public function getImagePathAttribute() {
         return explode('storage/', $this->image_url)[1];
     }
 
-    public function getImageUrlAttribute(string $string) {
-        // return 'http://localhost:8000/storage/'.$string;
-        return request()->schemeAndHttpHost().'/storage/'.$string;
-        // return route('storage/'.$string);
+    public function getImageUrlAttribute(string | null $string) {
+        if (!$string) return null;
+        return Storage::url($string);
     }
 
     /**

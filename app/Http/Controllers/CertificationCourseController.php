@@ -10,58 +10,68 @@ use Illuminate\Support\Facades\DB;
 class CertificationCourseController extends Controller
 {
     public function store(Request $request) {
-        $course = null;
-        DB::transaction(function () use ($request, &$course) {
-            if ($request->hasFile('image')) {
-                $name = strtolower(str_replace(' ', '_', $request->code));
-                $image_name = $name.'.'.$request->image->extension();
-                $image_url = $request->image->storeAs('/public/images/certification_courses', $image_name);
-            } else $image_url = '';
-            if ($request->hasFile('schedule')) {
-                $name = strtolower(str_replace(' ', '_', $request->code));
-                $schedule_name = $name.'.'.$request->schedule->extension();
-                $schedule_url = $request->schedule->storeAs('/public/schedule/certification_courses', $schedule_name);
-            } else $schedule_url = '';
-            $course = CertificationCourse::create(['code'=>$request->code, 'title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>json_encode($request->objectives), 'attendees'=>json_encode($request->attendees), 'prerequisites'=>json_encode($request->prerequisites), 'modules'=>json_encode($request->modules), 'date'=>json_encode($request->date), 'price'=>json_encode($request->price), 'discount'=>$request->discount, 'image_url'=>substr($image_url, 7), 'schedule_url'=>substr($schedule_url, 7)]);
-        });
-        return $course;
+
+        try {
+            $course = null;
+            DB::transaction(function () use ($request, &$course) {
+                $attributes = ['code'=>$request->code, 'title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>json_encode($request->objectives), 'attendees'=>json_encode($request->attendees), 'prerequisites'=>json_encode($request->prerequisites), 'modules'=>json_encode($request->modules)];
+
+                if ($request->hasFile('image')) {
+                    $name = strtolower(str_replace(' ', '_', $request->code));
+                    $image_name = $name.'.'.$request->image->extension();
+                    $image_url = $request->image->storeAs('images/certificate_courses', $image_name);
+                    $attributes = [...$attributes, 'image_url'=>$image_url];
+                }
+                $course = CertificationCourse::create($attributes);
+            });
+            return response()->json(['status'=>'success'], 200);
+            // return $course;
+        } catch (\Throwable $th) {
+            return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again.'], 200);
+        }
+
     }
 
 
     public function edit(Request $request, string $course_code) {
-        $course = CertificationCourse::where('code', $course_code)->first();
-        DB::transaction(function () use ($request, &$course) {
-            $name = strtolower(str_replace(' ', '_', $request->code));
-            $attributes = ['code'=>$request->code, 'title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>json_encode($request->objectives), 'attendees'=>json_encode($request->attendees), 'prerequisites'=>json_encode($request->prerequisites), 'modules'=>json_encode($request->modules), 'date'=>json_encode($request->date), 'price'=>json_encode($request->price), 'discount'=>$request->discount,];
-
-            if ($request->hasFile('image')) {
-                $image_name = $name.'.'.$request->image->extension();
-                $image_url = $request->image->storeAs('/public/images/certification_courses', $image_name);
-                // substr($image_url, 7)
-                $attributes = [...$attributes, 'image_url'=>substr($image_url, 7)];
-            }
-            if ($request->hasFile('schedule')) {
-                // $schedule_name = $name.'.'.$request->schedule->extension();
-                $schedule_url = '';#$request->schedule->storeAs('/public/schedule/certification_courses', $schedule_name);
-                $attributes = [...$attributes, 'schedule_url'=>substr($schedule_url, 7)];
-            }
-            // var_dump($attributes);return null;
-            $course->update($attributes);
-        });
-        return $course;
+        try {
+            $course = CertificationCourse::where('code', $course_code)->first();
+            DB::transaction(function () use ($request, &$course) {
+                $name = strtolower(str_replace(' ', '_', $request->code));
+                $attributes = ['code'=>$request->code, 'title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>json_encode($request->objectives), 'attendees'=>json_encode($request->attendees), 'prerequisites'=>json_encode($request->prerequisites), 'modules'=>json_encode($request->modules)];
+    
+                if ($request->hasFile('image')) {
+                    $image_name = $name.'.'.$request->image->extension();
+                    $image_url = $request->image->storeAs('images/certification_courses', $image_name);
+                    // substr($image_url, 7)
+                    $attributes = [...$attributes, 'image_url'=>$image_url];
+                }
+                // if ($request->hasFile('schedule')) {
+                //     // $schedule_name = $name.'.'.$request->schedule->extension();
+                //     $schedule_url = '';#$request->schedule->storeAs('schedule/certification_courses', $schedule_name);
+                //     $attributes = [...$attributes, 'schedule_url'=>$schedule_url];
+                // }
+                // var_dump($attributes);return null;
+                $course->update($attributes);
+            });
+            return response()->json(['status'=>'success'], 200);
+        } catch (\Throwable $th) {
+            return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again.'], 200);
+        }
     }
 
     public function delete(Request $request, string $course_code) {
-        $course = CertificationCourse::where('code', $course_code)->first();
-        DB::transaction(function () use ($request, &$course) {
-            $image_path = '/public/'.$course->actual_image_url;
-            // $schedule_path = '/public/'.$course->actual_schedule_url;
-            // var_dump($image_path);
-            // return null;
-            $course->delete();
-            Storage::delete([$image_path, /* $schedule_path */]);
-        });
-        return response()->json(['status'=>'success'], 200,);
+        try {
+            $course = CertificationCourse::where('code', $course_code)->first();
+            DB::transaction(function () use ($request, &$course) {
+                if ($course->image_url) $image_path = $course->image_path;
+                $course->delete();    
+                if ($course->image_url) Storage::delete([$image_path, /* $schedule_path */]);
+            });
+            return response()->json(['status'=>'success'], 200,);
+        } catch (\Throwable $th) {
+            return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again.'], 200);
+        }
     }
 
     public function get_list(Request $request, string $count) {
@@ -74,12 +84,16 @@ class CertificationCourseController extends Controller
     }
 
     public function get(Request $request, string $course_code) {
+
         $course = CertificationCourse::where('code', $course_code)->first();
-        return response()->json($course, 200);
+
+        if (!$course) return response()->json(['status'=>'failed', 'message'=>'No course with such name.'], 200);
+
+        return response()->json(['status'=>'success', 'course'=>$course], 200);
     }
 
 
     public function get_names() {
-        return CertificationCourse::select(DB::raw('concat(code, " - ", title) as name'))->get();
+        return CertificationCourse::select(['code', 'title'])->get();
     }
 }

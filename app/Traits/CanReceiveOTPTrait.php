@@ -19,13 +19,15 @@ trait CanReceiveOTPTrait {
 
         
         $api_endpoint = 'https://mitiget.com.ng/mailerapi/message/singlemail';
+        
 
         if ($type == 'verification') {
-            $title = 'Email Verification OTP';
-            $message = '<p>Verify your email with this one time passcode: <b>'.$this->generated_otp.'</b>. Code is valid for 30 minutes.</p>';
+            $title = 'Verify Your Email Address and Unlock Mitiget Learning!';
+            $message = view('emails.verify', ['first_name'=>$this->first_name, 'otp_code'=>$this->generated_otp])->render();
+            // $message = '<p>Verify your email with this one time passcode: <b>'.$this->generated_otp.'</b>. Code is valid for 30 minutes.</p>';
         } else {
-            $title = 'Sign in OTP';
-            $message = '<p>Sign in to your Mitget Learning Academy account with this one time passcode: <b>'.$this->generated_otp.'</b>. Code is valid for 30 minutes.</p>';
+            $title = 'Secure Login to Mitiget Learning Academy (One-Time Code)';
+            $message = view('emails.login', ['first_name'=>$this->first_name, 'otp_code'=>$this->generated_otp])->render();
         }
         
         $data = [
@@ -47,7 +49,8 @@ trait CanReceiveOTPTrait {
                 if ($this->otp) $this->otp()->delete();
                 $now = \Carbon\Carbon::now();
                 $this->otp()->create(['code'=>$this->generated_otp, 'expires_at'=>$now->addMinutes(30)]);
-                // var_dump('here? no!',$response->body()); return null;
+                // return response()->json(['body'=>$response->body()], 200);
+                // var_dump('here? no!', ($response->body())); return null;
                 if (!$response->ok()) {
                     throw new \Exception('couldn\'t send email');
                 }

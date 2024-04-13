@@ -15,6 +15,7 @@ class ShouldUseAdminJWT
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // return response()->json(['error'=>'Unauthorized'], 401);
         auth()->shouldUse('admin-jwt');
         return $next($request);
     }
