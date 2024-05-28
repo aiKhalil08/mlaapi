@@ -14,7 +14,7 @@ class Certificate extends Model
 
     public $timestamps = false;
     public $guarded = ['id'];
-    protected $hidden = ['id'];
+    protected $hidden = ['id', 'user_id'];
 
 
     /**

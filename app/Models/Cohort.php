@@ -16,7 +16,7 @@ class Cohort extends Model
 
     public $timestamps = false;
     public $guarded = ['id'];
-    protected $hidden = ['id'];
+    protected $hidden = ['id', 'status_id'];
 
 
 
@@ -40,7 +40,7 @@ class Cohort extends Model
      */
     public function students(): BelongsToMany
     {
-        return $this->belongsToMany(Student::class);
+        return $this->belongsToMany(User::class, 'cohort_user', 'cohort_id', 'user_id');
     }
 
     /**
@@ -50,13 +50,7 @@ class Cohort extends Model
      */
     public function status(): BelongsTo
     {
-        return $this->belongsTo(CohortStatus::class, 'status_id');
-    }
-
-    public static function get_all() {
-        $cohorts = DB::select('select c.name, s.name as status from cohorts as c inner join cohort_statuses as s on c.status_id = s.id');
-
-        return $cohorts;
+        return $this->belongsTo(CohortStatus::class);
     }
 
 

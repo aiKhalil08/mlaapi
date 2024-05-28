@@ -11,7 +11,8 @@ class CohortStatus extends Model
     use HasFactory;
 
     public $timestamps = false;
-
+    protected $hidden = ['id'];
+    
     /**
      * Get all of the cohort for the CohortStatus
      *

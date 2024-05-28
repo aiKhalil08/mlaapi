@@ -14,7 +14,7 @@ class CertificationCourseController extends Controller
         try {
             $course = null;
             DB::transaction(function () use ($request, &$course) {
-                $attributes = ['code'=>$request->code, 'title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>json_encode($request->objectives), 'attendees'=>json_encode($request->attendees), 'prerequisites'=>json_encode($request->prerequisites), 'modules'=>json_encode($request->modules)];
+                $attributes = ['code'=>$request->code, 'title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>$request->objectives, 'attendees'=>$request->attendees, 'prerequisites'=>$request->prerequisites, 'modules'=>$request->modules];
 
                 if ($request->hasFile('image')) {
                     $name = strtolower(str_replace(' ', '_', $request->code));
@@ -38,7 +38,7 @@ class CertificationCourseController extends Controller
             $course = CertificationCourse::where('code', $course_code)->first();
             DB::transaction(function () use ($request, &$course) {
                 $name = strtolower(str_replace(' ', '_', $request->code));
-                $attributes = ['code'=>$request->code, 'title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>json_encode($request->objectives), 'attendees'=>json_encode($request->attendees), 'prerequisites'=>json_encode($request->prerequisites), 'modules'=>json_encode($request->modules)];
+                $attributes = ['code'=>$request->code, 'title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>$request->objectives, 'attendees'=>$request->attendees, 'prerequisites'=>$request->prerequisites, 'modules'=>$request->modules];
     
                 if ($request->hasFile('image')) {
                     $image_name = $name.'.'.$request->image->extension();

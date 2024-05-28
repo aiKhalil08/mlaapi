@@ -11,15 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('testimonials', function (Blueprint $table) {
+        Schema::create('events', function (Blueprint $table) {
             $table->id();
             $table->string('name', 255);
-            $table->string('company', 255)->nullable();
-            $table->string('designation', 255)->nullable();
-            $table->text('message')->nullable();
+            $table->text('description')->nullable();
+            $table->json('date')->nullable();
+            $table->enum('type', ['physical', 'virtual'])->nullable();
+            $table->json('price')->nullable();
+            $table->json('attendees')->nullable();
             $table->string('image_url', 255)->nullable();
-            // $table->string('author', 100)->nullable()->default('Admin');
-            // $table->dateTime('created_at')->nullable()->useCurrent();
             $table->unique('name');
         });
     }
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('testimonials');
+        Schema::dropIfExists('events');
     }
 };

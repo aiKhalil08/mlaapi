@@ -15,6 +15,7 @@ class BlogController extends Controller
         try {
             $blog = null;
             DB::transaction(function () use ($request, &$blog) {
+                $request->heading = $this->stripTrailingFullstop($request->heading);
                 $attributes = ['heading'=>$request->heading, 'content'=>$request->content];
                 if ($request->hasFile('image')) {
                     $name = strtolower(str_replace(' ', '_', $request->heading));
@@ -38,6 +39,7 @@ class BlogController extends Controller
             
             $blog = Blog::where('heading', $heading)->first();
             DB::transaction(function () use ($request, &$blog) {
+                $request->heading = $this->stripTrailingFullstop($request->heading);
                 $name = strtolower(str_replace(' ', '_', $request->heading));
                 $attributes = ['heading'=>$request->heading, 'content'=>$request->content,];
 
@@ -53,6 +55,13 @@ class BlogController extends Controller
             return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again.'], 200);
         }
 
+    }
+
+    private function stripTrailingFullstop(string $value) {
+        if (\substr($value, -1) === '.') {
+            return \substr($value, 0, -1);
+        }
+        return $value;
     }
 
     public function delete(Request $request, string $heading) {

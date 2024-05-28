@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
+
 class Course extends Model
 {
     use HasFactory;
@@ -18,7 +19,7 @@ class Course extends Model
     protected $hidden = ['id'];
 
     public function getImagePathAttribute() {
-        return explode('storage/', $this->image_url)[1];
+        return $this->image_url ? explode('storage/', $this->image_url)[1] : null;
     }
     // public function getActualScheduleUrlAttribute() {
     //     return explode('storage/', $this->schedule_url)[1];
@@ -42,6 +43,48 @@ class Course extends Model
     public function carts(): MorphMany
     {
         return $this->morphMany(Cart::class, 'course');
+    }
+
+    public function objectives(): Attribute {
+        return Attribute::make(
+            get: fn ($value) => json_decode($value),
+            set: fn ($value) => $value ? json_encode($value) : json_encode([]),
+        );
+    }
+
+    public function prerequisites(): Attribute {
+        return Attribute::make(
+            get: fn ($value) => json_decode($value),
+            set: fn ($value) => $value ? json_encode($value) : json_encode([]),
+        );
+    }
+
+    public function attendees(): Attribute {
+        return Attribute::make(
+            get: fn ($value) => json_decode($value),
+            set: fn ($value) => $value ? json_encode($value) : json_encode([]),
+        );
+    }
+
+    public function modules(): Attribute {
+        return Attribute::make(
+            get: fn ($value) => json_decode($value),
+            set: fn ($value) => $value ? json_encode($value) : json_encode([]),
+        );
+    }
+
+    public function price(): Attribute {
+        return Attribute::make(
+            get: fn ($value) => json_decode($value),
+            set: fn ($value) => $value ? json_encode($value) : json_encode([]),
+        );
+    }
+
+    public function date(): Attribute {
+        return Attribute::make(
+            get: fn ($value) => json_decode($value),
+            set: fn ($value) => $value ? json_encode($value) : json_encode([]),
+        );
     }
 
 

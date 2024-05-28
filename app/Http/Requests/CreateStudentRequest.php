@@ -25,7 +25,7 @@ class CreateStudentRequest extends FormRequest
             'first_name' => ['required'],
             'last_name' => ['required'],
             'email' => ['required', 'email', 'unique:students'],
-            'phone_number' => ['required', 'unique:students'],
+            'phone_number' => ['required', 'unique:students', 'regex:/^(0\d{10}|[789]\d{9})$/'],
             'password' => ['required', 'confirmed'],
             'password_confirmation' => ['required']
         ];

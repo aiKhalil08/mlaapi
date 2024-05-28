@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class Sale extends Model
@@ -14,7 +15,7 @@ class Sale extends Model
     use HasFactory;
 
     public $timestamps = false;
-    public $guarded = ['id'];
+    public $guarded = ['id', 'user_id'];
     // protected $hidden = ['id'];
 
     /**
@@ -24,7 +25,7 @@ class Sale extends Model
      */
     public function student(): BelongsTo
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function course(): MorphTo {
@@ -63,8 +64,8 @@ class Sale extends Model
     }
 
 
-    public static function get_all() {
-        return DB::select('select sales.id, sales.price, sales.date, concat(students.first_name, " ", students.last_name) as student from sales inner join students on sales.student_id = students.id order by sales.date desc');
+    public function scopeBuyerNotDeleted(Builder $query) { // scopes to sales where buyer is not deleted
+        $query->has('student');
     }
 
 
@@ -76,10 +77,13 @@ class Sale extends Model
         if (!$sale) return null;
 
         $sale_type = $sale->type->name;
+
+        if ($sale->student) {
+            $buyer['name'] = $sale->student->name;
+            
+            $buyer['email'] = $sale->student->email;
+        } else $buyer = null;
         
-        $buyer['name'] = $sale->student->name;
-        
-        $buyer['email'] = $sale->student->email;
 
         if ($sale_type == 'Cohort') {
             $cohort['name'] = $sale->cohort->name;
@@ -106,19 +110,28 @@ class Sale extends Model
 
         $affiliate = null;
 
+        $has_referral = false;
+
         if ($referral) {
 
-
-            $affiliate['commission'] = $referral->commission;
+            $has_referral = true;
+            $affiliate['referral_commission'] = $referral->commission;
     
             $referrer = $referral->referrer;
+
+            if ($referrer) {
+                $affiliate['referrer']['name'] = $referrer->name;
+        
+                $affiliate['referrer']['email'] = $referrer->email;
+            } else $affiliate['referrer'] = null;
     
-            $affiliate['name'] = $referrer->name;
-    
-            $affiliate['email'] = $referrer->email;
         }
 
-        $data = ['type'=>$sale_type, 'student'=>$buyer, 'price'=>$sale->price, 'date'=>$sale->date, 'affiliate'=>$affiliate];
+        $data = ['type'=>$sale_type, 'student'=>$buyer, 'price'=>$sale->price, 'date'=>$sale->date, 'has_referral' => $has_referral];
+
+        if ($referral) {
+            $data = [...$data, 'affiliate'=>$affiliate];
+        }
 
         if ($sale_type == 'Cohort') $data = [...$data, 'cohort'=>$cohort];
         else if ($sale_type == 'Individual Course') $data = [...$data, 'course'=>$course];

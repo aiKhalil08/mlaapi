@@ -12,7 +12,7 @@ class OffshoreCourseController extends Controller
 
         try {
             DB::transaction(function () use ($request, &$course) {
-                $attributes = ['title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>json_encode($request->objectives), 'attendees'=>json_encode($request->attendees), 'prerequisites'=>json_encode($request->prerequisites), 'modules'=>json_encode($request->modules), 'date'=>json_encode($request->date), 'location'=>$request->location, 'price'=>json_encode($request->price), 'discount'=>$request->discount];
+                $attributes = ['title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>$request->objectives, 'attendees'=>$request->attendees, 'prerequisites'=>$request->prerequisites, 'modules'=>$request->modules, 'date'=>$request->date, 'location'=>$request->location, 'price'=>$request->price, 'discount'=>$request->discount];
 
                 if ($request->hasFile('image')) {
                     $name = strtolower(str_replace(' ', '_', $request->title));
@@ -41,7 +41,7 @@ class OffshoreCourseController extends Controller
             $course = OffshoreCourse::where('title', $course_title)->first();
             DB::transaction(function () use ($request, &$course) {
                 $name = strtolower(str_replace(' ', '_', $request->title));
-                $attributes = ['title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>json_encode($request->objectives), 'attendees'=>json_encode($request->attendees), 'prerequisites'=>json_encode($request->prerequisites), 'modules'=>json_encode($request->modules), 'date'=>json_encode($request->date), 'location'=>$request->location, 'price'=>json_encode($request->price), 'discount'=>$request->discount,];
+                $attributes = ['title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>$request->objectives, 'attendees'=>$request->attendees, 'prerequisites'=>$request->prerequisites, 'modules'=>$request->modules, 'date'=>$request->date, 'location'=>$request->location, 'price'=>$request->price, 'discount'=>$request->discount,];
 
                 if ($request->hasFile('image')) {
                     $image_name = $name.'.'.$request->image->extension();
@@ -49,11 +49,7 @@ class OffshoreCourseController extends Controller
                     // substr($image_url, 7)
                     $attributes = [...$attributes, 'image_url'=>$image_url];
                 }
-                // if ($request->hasFile('schedule')) {
-                //     // $schedule_name = $name.'.'.$request->schedule->extension();
-                //     $schedule_url = '';#$request->schedule->storeAs('schedule/offshore_courses', $schedule_name);
-                //     $attributes = [...$attributes, 'schedule_url'=>substr($schedule_url, 7)];
-                // }
+                
                 $course->update($attributes);
             });
             return response()->json(['status'=>'success'], 200);

@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('referrals', function (Blueprint $table) {
             $table->id();
-            $table->bigInt('referrer_id')->unsigned();
             $table->bigInt('code_id')->unsigned();
             $table->bigInt('sale_id')->unsigned();
             $table->string('commission');

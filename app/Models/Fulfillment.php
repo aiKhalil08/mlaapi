@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Fulfillment extends Model
 {
@@ -13,7 +15,7 @@ class Fulfillment extends Model
 
     public $timestamps = false;
     public $guarded = ['id'];
-    // protected $hidden = ['id'];
+    protected $hidden = ['user_id', 'status_id'];
 
 
     /**
@@ -21,27 +23,41 @@ class Fulfillment extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function student(): BelongsTo
+    public function affiliate(): BelongsTo
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-
-    public static function get_all() {
-        $pending = DB::select('select fulfillments.id, fulfillments.amount, fulfillments.date_added, fulfillments.type, concat(students.first_name, " ", students.last_name) as student from fulfillments inner join students on fulfillments.student_id = students.id and fulfillments.status = 0 order by fulfillments.date_added desc');
-
-        $history = DB::select('select fulfillments.id, fulfillments.amount, fulfillments.date_fulfilled, fulfillments.status, fulfillments.type, concat(students.first_name, " ", students.last_name) as student from fulfillments inner join students on fulfillments.student_id = students.id and fulfillments.status <> 0 order by fulfillments.date_fulfilled desc');
-
-
-        return ['pending' => $pending, 'history'=>$history];
+    /**
+     * Get the status that owns the Cohort
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function status(): BelongsTo
+    {
+        return $this->belongsTo(FulfillmentStatus::class);
     }
 
+    public function scopePending($query): void {
+        $query->where('status_id', 0);
+    }
 
-    public static function get(int $id) {
-        $fulfillment = DB::select('select fulfillments.amount, fulfillments.date_added, fulfillments.type, fulfillments.account_details, concat(students.first_name, " ", students.last_name) as name, students.email from fulfillments inner join students on fulfillments.student_id = students.id and fulfillments.id = ?', [$id]);
+    public function scopeFulfilled($query): void {
+        $query->where('status_id', 1);
+    }
 
+    public function scopeRejected($query): void {
+        $query->where('status_id', 2);
+    }
 
+    public function scopeAffiliateNotDeleted(Builder $query) { // scopes to fulfillments where affiliate is not deleted
+        $query->has('affiliate');
+    }
 
-        return $fulfillment[0];
+    public function accountDetails(): Attribute {
+        return Attribute::make(
+            get: fn ($value) => json_decode($value),
+            set: fn ($value) => $value ? json_encode($value) : json_encode([]),
+        );
     }
 }

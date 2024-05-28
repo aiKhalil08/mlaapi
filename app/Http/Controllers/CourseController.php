@@ -7,6 +7,8 @@ use App\Models\CertificateCourse;
 use App\Models\CertificationCourse;
 use App\Models\OffshoreCourse;
 use App\Models\Course;
+use App\Models\User;
+use App\Models\Student;
 use Illuminate\Support\Facades\DB;
 
 class CourseController extends Controller
@@ -22,10 +24,9 @@ class CourseController extends Controller
     }
 
 
-    public function trending_courses() {
+    public function trendingCourses() {
 
         return response()->json(['courses' => Course::trending_courses()], 200);
-        // var_dump(Course::trending_courses()); return null;
     }
 
     public function get_enrolled_students(string $type, string $course_identity) {
@@ -38,11 +39,22 @@ class CourseController extends Controller
         
         if (!$course) return response()->json(['status'=> 'failed', 'message'=>'No course with such name'], 200);
        
-        $course_type = get_class($course);
 
+        $students = User::areStudents()->select('users.id', 'first_name', 'last_name', 'email')
+        ->join('sales', 'users.id', '=', 'sales.user_id') // gets all students that have made a purchase
+        ->where('sales.sale_type_id', '2') // filters purchases to only include individual course purchases (type_id = 2)
+        ->where('sales.course_type', $course::class) //filters purchases to only include specified course category
+        ->where('sales.course_id', $course->id) //filters purchases to only include specified course id
+        ->get()->map(function ($user) {
+            return new Student($user->makeVisible('id')->toArray());
+        });
 
-
-        $students = DB::select('select distinct s.first_name, s.last_name, s.email, (select url from certificates where certificates.student_id = s.id and certificates.course_type = ? and certificates.course_id = ?) as certificate from students as s inner join sales on s.id = sales.student_id and sale_type_id = 2 and sales.course_type = ? and sales.course_id = ?', [$course_type, $course->id, $course_type, $course->id]);
+        $students->load(['certificate' => function ($query) use ($course) {
+            $query->select(['url', 'user_id'])
+                ->where('course_type', $course::class)
+                ->where('course_id', $course->id)
+                ->limit(1);
+        }]);
 
         return response()->json(['status'=>'success','students'=>$students], 200);
     }

@@ -11,8 +11,8 @@ class SaleRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // return auth()->user()->type == "admin";
-        return true;
+        return auth()->user()->hasRole(['admin', 'super_admin']);
+        // return true;
     }
 
     /**

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Certificate;
 use App\Models\Cohort;
 use App\Models\Student;
+use App\Models\User;
 use App\Models\CertificateCourse;
 use App\Models\CertificationCourse;
 use App\Models\OffshoreCourse;
@@ -49,7 +50,9 @@ class CertificateController extends Controller
                 $to_be_edited = $edits && in_array($email, $edits);
                 $old_certificate = null;
                 
-                $student = Student::where('email', $email)->select('id')->first();
+                $user = User::where('email', $email)->select('id')->first();
+
+                $student = new Student($user->makeVisible('id')->toArray());
     
                 if ($to_be_edited) {
                     if ($type == 1) $old_certificate = $student->certificates()->where('cohort_id', $cohort->id)->first();
@@ -62,7 +65,7 @@ class CertificateController extends Controller
                     $old_certificate->update(['url'=> $url]);
                 } else {
                     
-                    $attributes = ['type_id'=>$type, 'student_id'=>$student->id, 'url'=>$url];
+                    $attributes = ['type_id'=>$type, 'user_id'=>$student->id, 'url'=>$url];
                     
                     if ($type == 1) $attributes = [...$attributes, 'cohort_id'=>$cohort->id];
                     else if ($type == 2) $attributes = [...$attributes, 'course_type'=>get_class($course), 'course_id'=>$course->id];
@@ -81,7 +84,6 @@ class CertificateController extends Controller
     }
 
     public function get(Request $request, string $type) {
-
         try {
             $student_email = $request->s;
             $student = Student::where('email', $student_email)->first();
@@ -120,43 +122,8 @@ class CertificateController extends Controller
     }
 
 
-    public function get_my_certificates() {
-        $student = auth()->user();
 
-        // $certificates = DB::select('select url, case
-        // when certificates.type_id = 1 then select cohorts.name from cohorts where cohorts.id = certificates.cohort_id when certificates.course_type = "App\Models\CertificateCourse" then select concat(cc.title, " ", cc.code) from certificate_courses as cc where cc.id = certificates.course_id
-        // when certificates.course_type = "App\Models\CertificationCourse" then select concat(ctc.title, " ", ctc.code) from certification_courses as ctc where ctc.id = certificates.course_id
-        // when certificates.course_type = "App\Models\OffshoreCourse" then select oc.title from offshore_courses as oc where oc.id = certificates.course_id as name
-        // from certificates inner join students on certificates.student_id = students.id where students.id = ?', [$student->id]);
-
-        $certificates = $student->certificates;
-
-        if (!$certificates) return response()->json(['status'=>'failed', 'message'=>'You don\'t have any certificates yet'], 200);
-
-        $data = [];
-
-        foreach ($certificates as $certificate) {
-            if ($certificate->type_id == 1) $name = $certificate->cohort->name;
-            else {
-                if ($certificate->course_type == "App\Models\OffshoreCourse") $name = $certificate->course->title;
-                else $name = $name = $certificate->course->title.' - '.$certificate->course->code;
-            }
-
-            $url = $certificate->url;
-
-            $data[] = ['name'=>$name, 'url'=>$url];
-        }
-
-        // $certificates = $student->certificates()->select(DB::raw('case
-        // when certificates.type_id = 1 then select cohorts.name from cohorts where cohorts.id = certificates.cohort_id when certificates.course_type = "App\Models\CertificateCourse" then select concat(cc.title, " ", cc.code) from certificate_courses as cc where cc.id = certificates.course_id
-        // when certificates.course_type = "App\Models\CertificationCourse" then select concat(ctc.title, " ", ctc.code) from certification_courses as ctc where ctc.id = certificates.course_id
-        // when certificates.course_type = "App\Models\OffshoreCourse" then select oc.title from offshore_courses as oc where oc.id = certificates.course_id as name, url'))->get();
-        
-        return response()->json(['status'=>'success', 'certificates'=>$data], 200);
-    }
-
-
-    public function download_certificate(Request $request) {
+    public function downloadCertificate(Request $request) {
         $path = $request->path;
         return Storage::download($path);
     }

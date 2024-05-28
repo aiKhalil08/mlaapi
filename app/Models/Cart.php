@@ -20,7 +20,7 @@ class Cart extends Model
         try {
             DB::transaction(function () use ($student, $course) {
                 DB::table('carts')->insert([
-                    'student_id' => $student->id,
+                    'user_id' => $student->id,
                     'course_id' => $course->id,
                     'course_type' => get_class($course),
                 ]);

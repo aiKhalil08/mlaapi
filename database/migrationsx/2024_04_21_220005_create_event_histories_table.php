@@ -11,19 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('events', function (Blueprint $table) {
-            // $table->id();
-            // $table->timestamps();
+        Schema::create('events_history', function (Blueprint $table) {
             $table->id();
+            $table->bigInteger('parent_id')->nullable();
             $table->string('name', 255);
             $table->text('description')->nullable();
-            // $table->json('eligible');
             $table->json('date')->nullable();
             $table->enum('type', ['physical', 'virtual'])->nullable();
             $table->json('price')->nullable();
             $table->json('attendees')->nullable();
             $table->string('image_url', 255)->nullable();
-            $table->unique('name');
+            $table->bigInteger('user_id')->nullable();
+            $table->timestamp('date_added')->useCurrent();
         });
     }
 
@@ -32,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('events');
+        Schema::dropIfExists('event_histories');
     }
 };

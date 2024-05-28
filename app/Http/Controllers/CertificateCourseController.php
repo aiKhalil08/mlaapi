@@ -13,7 +13,7 @@ class CertificateCourseController extends Controller
         try {
             $course = null;
             DB::transaction(function () use ($request, &$course) {
-                $attributes = ['code'=>$request->code, 'title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>json_encode($request->objectives), 'attendees'=>json_encode($request->attendees), 'prerequisites'=>json_encode($request->prerequisites), 'modules'=>json_encode($request->modules), 'price'=>json_encode($request->price), 'discount'=>$request->discount];
+                $attributes = ['code'=>$request->code, 'title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>$request->objectives, 'attendees'=>$request->attendees, 'prerequisites'=>$request->prerequisites, 'modules'=>$request->modules, 'price'=>$request->price, 'discount'=>$request->discount];
 
                 if ($request->hasFile('image')) {
                     $name = strtolower(str_replace(' ', '_', $request->code));
@@ -21,15 +21,10 @@ class CertificateCourseController extends Controller
                     $image_url = $request->image->storeAs('/images/certificate_courses', $image_name);
                     $attributes = [...$attributes, 'image_url'=>$image_url];
                 }
-                // if ($request->hasFile('schedule')) {
-                //     $name = strtolower(str_replace(' ', '_', $request->code));
-                //     $schedule_name = $name.'.'.$request->schedule->extension();
-                //     $schedule_url = $request->schedule->storeAs('/schedule/certificate_courses', $schedule_name);
-                // } else $schedule_url = '';
+                
                 $course = CertificateCourse::create($attributes);
             });
             return response()->json(['status'=>'success'], 200);
-            // return $course;
         } catch (\Throwable $th) {
             return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again.'], 200);
         }
@@ -41,19 +36,14 @@ class CertificateCourseController extends Controller
             $course = CertificateCourse::where('code', $course_code)->first();
             DB::transaction(function () use ($request, &$course) {
                 $name = strtolower(str_replace(' ', '_', $request->code));
-                $attributes = ['code'=>$request->code, 'title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>json_encode($request->objectives), 'attendees'=>json_encode($request->attendees), 'prerequisites'=>json_encode($request->prerequisites), 'modules'=>json_encode($request->modules), 'price'=>json_encode($request->price), 'discount'=>$request->discount];
+                $attributes = ['code'=>$request->code, 'title'=>$request->title, 'overview'=>$request->overview, 'objectives'=>$request->objectives, 'attendees'=>$request->attendees, 'prerequisites'=>$request->prerequisites, 'modules'=>$request->modules, 'price'=>$request->price, 'discount'=>$request->discount];
     
                 if ($request->hasFile('image')) {
                     $image_name = $name.'.'.$request->image->extension();
                     $image_url = $request->image->storeAs('images/certificate_courses', $image_name);
-                    // substr($image_url, 7)
                     $attributes = [...$attributes, 'image_url'=>$image_url];
                 }
-                // if ($request->hasFile('schedule')) {
-                //     // $schedule_name = $name.'.'.$request->schedule->extension();
-                //     $schedule_url = '';#$request->schedule->storeAs('/schedule/certificate_courses', $schedule_name);
-                //     $attributes = [...$attributes, 'schedule_url'=>$schedule_url];
-                // }
+                
                 $course->update($attributes);
             });
             return response()->json(['status'=>'success'], 200);
@@ -63,7 +53,7 @@ class CertificateCourseController extends Controller
     }
 
     public function delete(Request $request, string $course_code) {
-        // try {
+        try {
             
             $course = CertificateCourse::where('code', $course_code)->first();
             DB::transaction(function () use ($request, &$course) {
@@ -72,9 +62,9 @@ class CertificateCourseController extends Controller
                 if ($course->image_url) Storage::delete([$image_path, /* $schedule_path */]);
             });
             return response()->json(['status'=>'success'], 200,);
-        // } catch (\Throwable $th) {
-        //     return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again.'], 200);
-        // }
+        } catch (\Throwable $th) {
+            return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again.'], 200);
+        }
     }
 
     public function get_list(Request $request, string $count) {

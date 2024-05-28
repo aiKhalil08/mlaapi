@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use App\Models\Student;
+use App\Models\User;
 
 class PasswordController extends Controller
 {
@@ -15,42 +15,36 @@ class PasswordController extends Controller
         return implode('', $array);
     }
 
-    private function remove_token($email, $type) {
-        DB::table('password_reset_tokens')->where([
-            ['email', $email], ['type', $type]
-        ])->delete();
+    private function remove_token($email) {
+        DB::table('password_reset_tokens')->where('email', $email)->delete();
     }
 
-    private function fetch_token($email, $type) {
-        // $token = DB::select('select * from password_reset_token where email = ?', [$email]);
+    private function fetch_token($email) {
 
-        $token = DB::table('password_reset_tokens')->where([
-            ['email', $email], ['type', $type]
-        ])->first();
+        $token = DB::table('password_reset_tokens')->where('email', $email)->first();
         return $token;
     }
 
 
-    private function insert_token_in_db($email, $token, $type) {
+    private function insert_token_in_db($email, $token) {
         $now = \Carbon\Carbon::now();
         $expires_at = \Carbon\Carbon::now()->addMinutes(30);
 
 
         if (DB::table('password_reset_tokens')->upsert([
             'email' => $email,
-            'type' => $type,
             'token' => $token,
             'created_at' => $now,
             'expires_at' => $expires_at
-        ], ['email', 'type'], ['token', 'created_at', 'expires_at'])) return true;
+        ], ['email'], ['token', 'created_at', 'expires_at'])) return true;
 
         return false;
     }
 
-    private function create_reset_link($email, $token, $type) {
-        $signature = base64_encode($email.':'.$token.':'.$type);
-        return 'https://mla.mitiget.com/reset-password?s='.$signature;
-        // return 'http://localhost:4200/reset-password?s='.$signature;
+    private function create_reset_link($email, $token) {
+        $signature = base64_encode($email.':'.$token);
+        // return 'https://mla.mitiget.com/reset-password?s='.$signature;
+        return 'http://localhost:4200/reset-password?s='.$signature;
     }
 
     private function compose_mail($first_name, $email, $reset_link) {
@@ -69,26 +63,22 @@ class PasswordController extends Controller
         ];
     }
 
-    public function send_reset_link(Request $request, string $type) {
+    public function send_reset_link(Request $request) {
         $user = null;
         $email = $request->email;
-        if ($type == 'student') {
-            $user = \App\Models\Student::where('email',$email)->first();
-        } else {
-
-        }
-        // var_dump($user); return null;
+        $user = User::where('email',$email)->first();
+        
         if (!$user) return response()->json(['status'=>'failed', 'message'=>'Invalid email address'], 200);
 
 
         try {
-            DB::transaction(function () use ($user, $email, $type) {
+            DB::transaction(function () use ($user, $email) {
                 $api_endpoint = 'https://mitiget.com.ng/mailerapi/message/singlemail';
                 $token = $this->generate_token();
-                $reset_link = $this->create_reset_link($email, $token, $type);
+                $reset_link = $this->create_reset_link($email, $token);
                 $data = $this->compose_mail($user->first_name, $email, $reset_link);
                 $response = \Illuminate\Support\Facades\Http::post($api_endpoint, $data);
-                $this->insert_token_in_db(token: $token, email: $email, type: $type);
+                $this->insert_token_in_db(token: $token, email: $email);
                 if (!$response->ok()) {
                     throw new \Exception('couldn\'t send email');
                 }
@@ -101,7 +91,8 @@ class PasswordController extends Controller
     }
 
     public function validate_link(Request $request) {
-        $token = $this->fetch_token($request->email, $request->type);
+        $token = $this->fetch_token($request->email);
+
 
         if (!$token) return response()->json(['status'=>'failed', 'message'=>'Token does not exist'], 200);
 
@@ -114,7 +105,6 @@ class PasswordController extends Controller
 
 
     public function reset_password(Request $request) {
-        $type = $request->type;
         $email = $request->email;
 
         $validator = Validator::make($request->all(), [
@@ -126,15 +116,12 @@ class PasswordController extends Controller
 
         $user = null;
 
-        if ($type == 'student') {
-            $user = Student::where('email', $email)->first();
-        } else {
-
-        }
+        $user = User::where('email', $email)->first();
+        
 
         if ($user) {
             $user->update(['password'=>bcrypt($input['password'])]);
-            $this->remove_token($email, $type);
+            $this->remove_token($email);
             return response()->json(['status'=>'success', 'message'=>'Password reset'], 200);
         }
 

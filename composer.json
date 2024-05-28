@@ -6,11 +6,13 @@
     "license": "MIT",
     "require": {
         "php": "^8.1",
+        "froiden/sql-generator": "dev-master",
         "guzzlehttp/guzzle": "^7.2",
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
         "sinergi/token": "^0.1.0",
+        "spatie/laravel-permission": "^6.7",
         "tymon/jwt-auth": "^2.0"
     },
     "require-dev": {

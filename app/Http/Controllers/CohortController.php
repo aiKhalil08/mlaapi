@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Cohort;
+use App\Models\User;
+use App\Models\Student;
 use App\Models\CertificateCourse;
 use App\Models\CertificationCourse;
 use App\Models\OffshoreCourse;
@@ -17,24 +19,11 @@ class CohortController extends Controller
         $cohort = null;
         try {
             DB::transaction(function () use ($request, &$cohort) {
-                // if ($request->hasFile('image')) {
-                //     $name = strtolower(str_replace(' ', '_', $request->code));
-                //     $image_name = $name.'.'.$request->image->extension();
-                //     $image_url = $request->image->storeAs('/public/images/certificate_courses', $image_name);
-                // } else $image_url = '';
-                // if ($request->hasFile('schedule')) {
-                //     $name = strtolower(str_replace(' ', '_', $request->code));
-                //     $schedule_name = $name.'.'.$request->schedule->extension();
-                //     $schedule_url = $request->schedule->storeAs('/public/schedule/certificate_courses', $schedule_name);
-                // } else $schedule_url = '';
-                // $course_identity = trim(preg_split('/-(?=[^-]*$)/', $request->course_name)[0]);
                 $course = match ($request->course_type) {
                     'Certificate Course' => CertificateCourse::where('code', $request->course_identity)->select('id')->first(),
                     'Certification Course' => CertificationCourse::where('code', $request->course_identity)->select('id')->first(),
                     'Offshore Course' => OffshoreCourse::where('title', $request->course_identity)->select('id')->first(),
                 };
-
-                // var_dump([...$request->only(['name', 'start_date', 'end_date']), 'course_type'=>get_class($course), 'course_id'=>$course->id]); return null;
 
                 $cohort = Cohort::create([...$request->only(['name', 'start_date', 'end_date',]), 'course_type'=>get_class($course), 'course_id'=>$course->id, 'duration'=>json_encode($request->duration)]);
             });
@@ -69,16 +58,15 @@ class CohortController extends Controller
     }   
 
 
-    public function get_all() {
-        $cohorts = Cohort::get_all();
+    public function get_all(string $type = null) {
 
-        // $cohort = Cohort::with('status')->first();
+        $excluded_statuses = [];
 
-        // $cohort->load('status');
-
-        // var_dump($cohort->status); return null;
-
-        // var_dump($cohorts); return null;
+        if ($type == 'for-sale') $excluded_statuses = [2, 3]; //exclude concluded and aborted cohorts when getting cohort names of adding sale
+        
+        $cohorts = Cohort::select(['name', 'status_id'])->whereNotIn('status_id', $excluded_statuses)->with(['status'=>function ($query) {
+            $query->select(['id','name']);
+        }])->get();
 
         return response()->json(['cohorts'=>$cohorts], 200);
     }
@@ -104,18 +92,26 @@ class CohortController extends Controller
 
     public function all_students_showing_those_in_cohort(string $name) {
 
-        $cohort_id = Cohort::select('id')->where('name', $name)->first()->id;
+        $cohort = Cohort::select('id')->where('name', $name)->first();
 
-        if (!$cohort_id) return response()->json(['status'=>'failed','message'=>'Cohort with provided name does not exist.'], 200);
+        if (!$cohort) return response()->json(['status'=>'failed','message'=>'Cohort with provided name does not exist.'], 200);
 
-        $students = DB::select('select s.first_name, s.last_name, s.email, s.id, case when s.id in (select student_id from cohort_student where cohort_id = ?) then 1 else 0 end as registration_status from students as s', [$cohort_id]);
+        $cohort_id = $cohort->id;
 
-        return response()->json(['status'=>'success','students'=>$students], 200);
+        $ids_for_students_in_cohort = $cohort->students()->pluck('id')->toArray();
+
+
+        $all_students = User::areStudents()->select(['id', 'first_name', 'last_name', 'email'])->get()->each(function ($student) use ($ids_for_students_in_cohort) {
+            if (in_array($student->id, $ids_for_students_in_cohort)) $student->registration_status = 1;
+            else $student->registration_status = 0;
+
+        });
+
+
+        return response()->json(['status'=>'success','students'=>$all_students->makeVisible('id')], 200);
     }
 
-    public function add_students(Request $request, string $name) {
-
-        // var_dump($request->all()); return null;
+    public function updateStudents(Request $request, string $name) {
         
         $cohort = Cohort::where('name', $name)->first();
 
@@ -167,12 +163,6 @@ class CohortController extends Controller
         
 
 
-        // var_dump($body); return null;
-
-
-        // $message = preg_replace($pattern, $students[0][$placeholder], $template);
-
-
         $data = [
             'subject' => $request->subject,
             'template' => view('emails.notification', ['template'=>$template])->render(),
@@ -205,18 +195,8 @@ class CohortController extends Controller
         if ($cohort->course_type != 'App\\Models\\OffshoreCourse') $course = $cohort->course()->select(['code', 'title'])->first();
         else $course = $cohort->course()->select(['title'])->first();
 
-        // $course_name['title'] = $course->title;
-
-
-        // var_dump($cohort->toArray(), $course); return null;
-
 
         return response()->json(['status'=>'success','cohort'=>[...collect($cohort->toArray())->except(['course_id']), 'course'=>$course->toArray()]], 200);
-    }
-
-
-    public function get_names() {
-        return Cohort::whereIn('status_id', [0,1, 2])->select(['name', 'status_id'])->get();
     }
 
 
@@ -280,11 +260,20 @@ class CohortController extends Controller
 
         if (!$cohort_id) return response()->json(['status'=>'failed','message'=>'Cohort with provided name does not exist.'], 200);
 
-        $students = DB::select('select s.first_name, s.last_name, s.email, (select url from certificates where student_id = s.id and certificates.cohort_id = ? limit 1) as certificate from students as s inner join cohort_student as cs on s.id = cs.student_id and cs.cohort_id = ?', [$cohort_id, $cohort_id]);
+        $students = User::areStudents()->select('id', 'first_name', 'last_name', 'email')
+        ->join('cohort_user AS cu', 'users.id', '=', 'cu.user_id')
+        ->where('cu.cohort_id', $cohort_id)
+        ->get()->map(function ($user) {
+            return new Student($user->makeVisible('id')->toArray());
+        });
 
-        // case when s.id in (select student_id from certificates where cohort_id = ?) then 1 else 0
-        // ifnull(select url from certificates inner join students on certificates.student_id = s.id where certificates.cohort_id = ?, 0)
-        // ifnull((select url from certificates where student_id = s.id and certificates.cohort_id = ? limit 1), "yoyo")
+        // var_dump($cohort_id); return null;
+
+        $students->load(['certificate' => function ($query) use ($cohort_id) {
+            $query->select(['url', 'user_id'])
+                ->where('cohort_id', $cohort_id)
+                ->limit(1);
+        }]);
 
         return response()->json(['status'=>'success','students'=>$students], 200);
     }

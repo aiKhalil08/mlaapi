@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Referral extends Model
 {
@@ -16,25 +17,43 @@ class Referral extends Model
     protected $hidden = ['id'];
 
 
+    // /**
+    //  * Get the buyer that owns the Referral
+    //  *
+    //  * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+    //  */
+    // public function buyer(): BelongsTo
+    // {
+    //     return $this->belongsTo(User::class);
+    // }
+
+
     /**
-     * Get the buyer that owns the Referral
+     * Get the referral code for the referral
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function buyer(): BelongsTo
+    public function code(): BelongsTo
     {
-        return $this->belongsTo(Student::class, 'buyer_id', 'id');
+        return $this->belongsTo(ReferralCode::class);
     }
 
-
     /**
-     * Get the referrer that owns the Referral
+     * Get the referral code owner
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return \Illuminate\Database\Eloquent\Relations\HasOneThrough
      */
-    public function referrer(): BelongsTo
+    public function referrer(): HasOneThrough
     {
-        return $this->belongsTo(Student::class, 'referrer_id', 'id');
+        // return $this->through('code')->has('owner');
+        return $this->hasOneThrough(
+            User::class,
+            ReferralCode::class,
+            'id',
+            'id',
+            'code_id',
+            'user_id',
+        );
     }
 
     /* retrieves the course */

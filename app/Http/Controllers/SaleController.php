@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Student;
+use App\Models\User;
 use App\Models\Sale;
 use App\Models\Cohort;
 use App\Models\CertificateCourse;
@@ -26,10 +27,7 @@ class SaleController extends Controller
              'individual_course_sale'=> 2,
         };
         
-        // $course_identity = trim(preg_split('/-(?=[^-]*$)/', $request->course_name)[0]);
-        
-        
-        // try {
+        try {
             
             if ($type == 1) {
                 $cohort = Cohort::where('name', $request->cohort_name)->select('id')->first();
@@ -44,29 +42,31 @@ class SaleController extends Controller
                 
                 if (!$course) return response()->json(['status'=>'failed', 'message'=>'Could not find course with the given name'], 200);
             }
-
-            // var_dump($cohort->id); return null;
             
             
             DB::transaction(function () use ($request, $course, $type, $cohort) {
-                $student = Student::where('email', $request->student_email)->first();
+                $user = User::areStudents()->where('email', $request->student_email)->first();
+
+                $student = new Student($user->makeVisible('id')->toArray());
 
                 $attributes = ['sale_type_id'=>$type,'price'=>$request->price];
 
+                
                 if ($type == 1) {$attributes = [...$attributes, 'cohort_id'=>$cohort->id];}
                 else if ($type == 2) {$attributes = [...$attributes, 'course_type'=>get_class($course), 'course_id'=>$course->id, ];}
-
+                
                 $sale = new Sale($attributes);
-
+                
                 $sale = $student->purchases()->save($sale);
+                if ($type == 1) $cohort->students()->attach($student->id);
                 
                 $has_referral = $request->boolean('has_referral');
                 if ($has_referral) {
                     $referral_code = ReferralCode::where('code', $request->referral_code)->first();
-                    $referral = new Referral(['commission'=>$request->commission, 'code_id'=>$referral_code->id, 'referrer_id'=>$referral_code->student->id]);
+                    $referral = new Referral(['commission'=>$request->commission, 'code_id'=>$referral_code->id]);
                     $sale->referral()->save($referral);
                 }
-
+                
                 // var_dump($sale->type); return null;
 
                 $this->notify_student($student, $sale);
@@ -74,9 +74,9 @@ class SaleController extends Controller
             });
 
             return response()->json(['status'=>'success', 'message'=>'Sale added'], 200);
-        // } catch (\Throwable $th) {
-        //     return response()->json(['status'=>'failed', 'message'=>'Could not add sale. Please try again later'], 200);
-        // }
+        } catch (\Throwable $th) {
+            return response()->json(['status'=>'failed', 'message'=>'Could not add sale. Please try again later'], 200);
+        }
 
     }
 
@@ -100,31 +100,22 @@ class SaleController extends Controller
             'companypassword' => env('COMPANY_PASSWORD'),
         ];
 
-        // try {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($api_endpoint, $data,) {
-                // var_dump('did you get here? yes');
-                $response = \Illuminate\Support\Facades\Http::post($api_endpoint, $data);
-                
-                // if (!$response->ok()) {
-                //     throw new \Exception('couldn\'t send email');
-                // }
-            });
-        //     return true;
-        // } catch (\Exception $e) {
-        //     return false;
-        // }
+        $response = \Illuminate\Support\Facades\Http::post($api_endpoint, $data);
+        
+        if (!$response->ok()) {
+            throw new \Exception('couldn\'t send email');
+        }
     }
 
 
     public function get_all(Request $request) {
 
+        $sales = Sale::select(['id', 'price', 'date', 'user_id'])
+        ->with(['student' => function ($query) {
+            $query->select(['id', DB::raw('concat(first_name, " ", last_name) full_name')]);
+        }])->get();
 
-        // $sales = Sale::with('student')->get();
-
-        $sales = Sale::get_all();
-
-
-        return response()->json(['sales'=>$sales], 200);
+        return response()->json(['total_amount'=>Sale::sum('price'), 'sales'=>$sales], 200);
     }
 
 

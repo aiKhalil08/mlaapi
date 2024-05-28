@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('offshore_courses', function (Blueprint $table) {
+        Schema::create('certificate_courses', function (Blueprint $table) {
             $table->id();
-            // $table->string('code', 15);
+            $table->string('code', 15);
             $table->string('title', 255);
             $table->text('overview');
             $table->json('objectives')->nullable();
@@ -22,24 +22,10 @@ return new class extends Migration
             $table->json('modules')->nullable();
             $table->json('date')->nullable();
             $table->json('price')->nullable();
-            $table->enum('location', ['Ghana', 'Kenya'])->nullable();
             $table->tinyInteger('discount')->unsigned()->nullable();
             $table->string('image_url', 255)->nullable();
-            $table->string('schedule_url', 255)->nullable();
-            // $table->unique('code');
+            $table->unique('code');
             $table->unique('title');
-
-            // $table->id();
-            // $table->string('title', 255);
-            // // $table->string('code', 15);
-            // // $table->text('description');
-            // // $table->json('eligible');
-            // $table->date('start_date');
-            // $table->date('end_date');
-            // $table->tinyInteger('duration')->unsigned();
-            // $table->string('location', 100);
-            // $table->decimal('cost', 13, 2);
-            // $table->tinyInteger('discount')->unsigned();
         });
     }
 
@@ -48,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('offshore_courses');
+        Schema::dropIfExists('certificate_courses');
     }
 };

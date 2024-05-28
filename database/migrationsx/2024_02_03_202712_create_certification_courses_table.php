@@ -20,11 +20,7 @@ return new class extends Migration
             $table->json('attendees')->nullable();
             $table->json('prerequisites')->nullable();
             $table->json('modules')->nullable();
-            $table->json('date')->nullable();
-            $table->json('price')->nullable();
-            $table->tinyInteger('discount')->unsigned()->nullable();
             $table->string('image_url', 255)->nullable();
-            $table->string('schedule_url', 255)->nullable();
             $table->unique('code');
             $table->unique('title');
         });
