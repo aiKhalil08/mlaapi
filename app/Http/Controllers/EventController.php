@@ -13,6 +13,8 @@ class EventController extends Controller
 {
     public function store(Request $request) {
 
+        // var_dump($request->all()); return null;
+
         try {
             // var_dump(collect($request->image)->toArray()); return null;
             $event = null;
@@ -25,7 +27,7 @@ class EventController extends Controller
 
                 $request->name = $this->stripTrailingFullstop($request->name);
 
-                $attributes = ['name'=>$request->name, 'description'=>$request->description, 'date'=>$request->date, 'type'=>$request->type, 'price'=>$price, 'attendees'=>$request->attendees];
+                $attributes = ['name'=>$request->name, 'description'=>$request->description, 'popups'=>$request->popups, 'date'=>$request->date, 'type'=>$request->type, 'price'=>$price, 'attendees'=>$request->attendees];
 
                 $image_urls = [];
                 if ($request->hasFile('image')) {
@@ -61,7 +63,7 @@ class EventController extends Controller
                 }
                 $request->name = $this->stripTrailingFullstop($request->name);
                 $name = strtolower(str_replace(' ', '_', $request->name));
-                $attributes = ['name'=>$request->name, 'description'=>$request->description, 'date'=>$request->date, 'type'=>$request->type, 'price'=>$price, 'attendees'=>$request->attendees];
+                $attributes = ['name'=>$request->name, 'description'=>$request->description, 'popups'=>$request->popups, 'date'=>$request->date, 'type'=>$request->type, 'price'=>$price, 'attendees'=>$request->attendees];
 
                 $image_urls = [];
                 if ($request->hasFile('image')) {
@@ -140,11 +142,41 @@ class EventController extends Controller
 
         try {
             DB::transaction(function () use ($request, &$event) {
-                $event->registrations()->create($request->only('first_name', 'last_name', 'email', 'phone_number', 'message'));
+                $registration = $event->registrations()->create($request->only('first_name', 'last_name', 'email', 'phone_number', 'message'));
+
+                $this->notify_registrant($event, $registration);
             });
+
             return response()->json(['status'=>'success'], 200,);
         } catch (\Throwable $th) {
             return response()->json(['status'=>'failed', 'message'=>'Something went wrong. Please try again.'], 200);
+        }
+    }
+
+    private function notify_registrant(Event $event, EventRegistration $registration) {
+
+        $api_endpoint = 'https://mitiget.com.ng/mailerapi/message/singlemail';
+
+        $subject = 'Thank You For Registering!';
+        $message = view('emails.successful-registration', ['event'=>$event, 'registration'=>$registration])->render();
+
+
+        $data = [
+            'title' => $subject,
+            
+            'message' => $message,
+            
+            'email' => $registration->email,
+            
+            'companyemail' => env('COMPANY_EMAIL'),
+            
+            'companypassword' => env('COMPANY_PASSWORD'),
+        ];
+
+        $response = \Illuminate\Support\Facades\Http::post($api_endpoint, $data);
+        
+        if (!$response->ok()) {
+            throw new \Exception('couldn\'t send email');
         }
     }
 

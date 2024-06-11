@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name', 255);
             $table->text('description')->nullable();
+            $table->json('popups')->nullable();
             $table->json('date')->nullable();
             $table->enum('type', ['physical', 'virtual'])->nullable();
             $table->json('price')->nullable();

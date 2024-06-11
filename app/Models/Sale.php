@@ -16,7 +16,7 @@ class Sale extends Model
 
     public $timestamps = false;
     public $guarded = ['id', 'user_id'];
-    // protected $hidden = ['id'];
+
 
     /**
      * Get the student that owns the Sale

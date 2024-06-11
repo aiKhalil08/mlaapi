@@ -17,24 +17,6 @@
             background-color: #DD127B;
 
         }
-        /* .purchase-details {
-            width: 90%;
-            max-width: 400px;
-            margin: auto;
-            border: 1px solid #DD127B;
-            padding: 16px;
-            border-radius: 16px;
-        }
-        .details-container {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        .detail-item {
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid #DD127B;
-        } */
 
         table {font-size: 14px; text-align: left}
         table, td {border: 1px solid #DD127B;}

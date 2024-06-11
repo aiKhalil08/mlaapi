@@ -80,7 +80,7 @@ class SaleController extends Controller
 
     }
 
-    public function notify_student(Student $student, Sale $sale) {
+    private function notify_student(Student $student, Sale $sale) {
 
         $api_endpoint = 'https://mitiget.com.ng/mailerapi/message/singlemail';
 

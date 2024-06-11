@@ -26,31 +26,14 @@ class Quiz extends Model
         return $this->hasMany(Question::class);
     }
 
-
     /**
-     * The assignedStudents that belong to the Quiz
+     * Get all of the assignments for the Quiz
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function assignedStudents(): BelongsToMany
+    public function assignments(): HasMany
     {
-        return $this->belongsToMany(User::class, 'assignments', 'quiz_id', 'user_id');
+        return $this->hasMany(Assignment::class);
     }
-
-
-    /**
-     * The assignedStudents that belong to the Quiz
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-     */
-    public function assignedExternalUsers(): BelongsToMany
-    {
-        return $this
-        ->belongsToMany(ExternalUser::class, 'assignments', 'quiz_id', 'user_id')
-        ->whereHas('roles', function (Builder $query) {
-            $query->where('name', 'external_user');
-        });
-    }
-
 
 }

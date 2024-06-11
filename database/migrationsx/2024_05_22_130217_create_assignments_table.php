@@ -13,21 +13,21 @@ return new class extends Migration
     {
         Schema::create('assignments', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('user_id')->unsigned();
             $table->bigInteger('quiz_id')->unsigned();
-            // $table->enum('shuffle', ['none', 'all', 'questions', 'options'])->(['foo', 'bar']);
-            // $table->boolean('user_notified')->default(false);
+            $table->string('name', 100)->unique();
+            $table->text('description');
+            $table->integer('duration');
+            $table->json('shuffle');
+            $table->longText('quiz_snapshot');
             $table->tinyInteger('status_id')->unsigned();
-            $table->timestamp('assigned_at')->useCurrent();
-            $table->bigInteger('assigned_by')->unsigned()->nullable();
-            $table->timestamp('date_started')->nullable();
-            $table->timestamp('date_completed')->nullable();
-            $table->integer('score')->unsigned()->nullable();
+            $table->timestamp('created_at')->useCurrent();
+            $table->dateTime('start_date')->nullable();
+            $table->dateTime('end_date')->nullable();
+            $table->bigInteger('created_by')->unsigned()->nullable();
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('quiz_id')->references('id')->on('quizzes')->onDelete('cascade');
             $table->foreign('status_id')->references('id')->on('assignment_statuses')->onDelete('restrict');
-            $table->foreign('assigned_by')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
         });
     }
 

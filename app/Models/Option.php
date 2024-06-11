@@ -13,7 +13,7 @@ class Option extends Model
 
     public $timestamps = false;
     public $guarded = ['id'];
-    protected $hidden = ['id', 'question_id'];
+    protected $hidden = ['question_id'];
     protected $table = 'question_options';
 
     /**
@@ -25,12 +25,4 @@ class Option extends Model
     {
         return $this->belongsTo(Question::class);
     }
-
-    // public function isCorrect(): Attribute
-    // {
-    //     return Attribute::make(
-    //         get: fn ($value) => $value,
-    //         set: fn ($value) => $value,
-    //     );
-    // }
 }

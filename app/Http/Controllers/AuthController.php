@@ -103,8 +103,9 @@ class AuthController extends Controller
         if ($user->hasRole('external_user')) $data = [...$data, 'is_external_user'=>true];
 
         if ($user->hasRole('student')) {
+            // 'watchlist'=>base64_encode(json_encode($student->events()->pluck('name')->toArray())), 
             $student = new Student($user->toArray());
-            $data = [...$data, 'cart'=>base64_encode(json_encode($student->cartedCoursesTitles())), 'watchlist'=>base64_encode(json_encode($student->events()->pluck('name')->toArray())), 'affiliate'=>base64_encode(json_encode(['is_affiliate'=>$student->isAffiliate(), 'total_commission'=>$student->total_commission, 'referral_code'=>$student->referralCode?->code, 'referral_code_expired'=>$student->referralCodeHasExpired()]))];
+            $data = [...$data, 'cart'=>base64_encode(json_encode($student->cartedCoursesTitles())), 'affiliate'=>base64_encode(json_encode(['is_affiliate'=>$student->isAffiliate(), 'total_commission'=>$student->total_commission, 'referral_code'=>$student->referralCode?->code, 'referral_code_expired'=>$student->referralCodeHasExpired()]))];
         }
 
         return response()->json($data, 200);

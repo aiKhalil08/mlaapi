@@ -61,6 +61,13 @@ class Event extends Model
         );
     }
 
+    public function popups(): Attribute {
+        return Attribute::make(
+            get: fn ($value) => json_decode($value),
+            set: fn ($value) => $value ? json_encode($value) : json_encode([]),
+        );
+    }
+
 
     public function attendees(): Attribute {
         return Attribute::make(

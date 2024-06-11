@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 interface CanTakeQuizInterface {
 
-    public function pendingAssignments(): BelongsToMany;
+    public function assignments(): BelongsToMany;
 
-    public function doneAssignments(): BelongsToMany;
+    public function assignmentsHistory(): BelongsToMany;
 }

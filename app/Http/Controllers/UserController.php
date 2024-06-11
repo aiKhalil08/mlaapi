@@ -9,6 +9,7 @@ use App\Models\AuditTrail;
 use App\Models\RoleHistory;
 use App\Enums\ModelEvents;
 use App\Models\UserHistory;
+use App\Models\Assignment;
 use Illuminate\Support\Facades\DB;
 use App\Traits\Recaptcha;
 use Illuminate\Support\Facades\Validator;
@@ -271,25 +272,5 @@ class UserController extends Controller
         if (!$user) return response()->json(['status'=> 'failed', 'message'=> 'user with provided email not found'], 200);
 
         return response()->json(['status'=>'success', 'user'=>$user], 200,);
-    }
-
-
-    // methods pertaining to quiz
-    
-    public function getQuizzes() {
-        $user = auth()->user()->castToExternalUser();
-
-        $user->pendingAssignments->loadCount('questions');
-        $user->pendingAssignments->loadSum('questions as points_sum', 'points');
-
-        return response()->json(['quizzes'=>$user->pendingAssignments], 200);
-
-        // $user->load('pendingAssignments');
-
-        // $user->loadCount('pendingAssignments');
-
-
-
-        var_dump($user->toArray()); return null;
     }
 }

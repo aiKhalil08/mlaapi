@@ -26,7 +26,7 @@ use App\Http\Controllers\AuditController;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ExternalUserController;
 use App\Http\Controllers\QuizController;
-
+use App\Http\Controllers\AssignmentController;
 
 
 
@@ -206,12 +206,33 @@ Route::middleware(['jwt_auth','must_be:admin'])->group(function () {
     Route::get('/admin/quiz/{title}/questions', [QuizController::class, 'getQuestions']);
     Route::get('/admin/quiz/{title}/assignments', [QuizController::class, 'getAssignments']);
     Route::post('/admin/quiz/{title}/assignments', [QuizController::class, 'updateAssignments']);
-    Route::post('/admin/quiz/{title}/notify', [QuizController::class, 'notify']);
+    // routes for assignments
+    Route::post('/admin/quiz/add-assignment', [QuizController::class, 'addAssignment']);
 });
 
-//routes for quiz takers
+//routes for assignments
+Route::middleware(['jwt_auth','must_be:admin'])->group(function () {
+    Route::post('/admin/assignment', [AssignmentController::class, 'store']);
+    Route::get('/admin/assignment/{name}', [AssignmentController::class, 'get']);
+    Route::delete('/admin/assignment/{name}', [AssignmentController::class, 'delete']);
+    Route::post('/admin/assignment/{name}/edit', [AssignmentController::class, 'edit']);
+    Route::get('/admin/assignments', [AssignmentController::class, 'getAll']);
+    Route::get('/admin/assignment/{name}/all-students', [AssignmentController::class, 'getAllStudents']);
+    Route::get('/admin/assignment/{name}/students', [AssignmentController::class, 'getStudents']);
+    Route::post('/admin/assignment/{name}/students', [AssignmentController::class, 'updateStudents']);
+    Route::post('/admin/assignment/{name}/notify-students', [AssignmentController::class, 'notifyStudents']);
+    Route::get('/admin/assignment/{name}/{new_status}', [AssignmentController::class, 'changeStatus']);
+});
+
+//routes for assignment takers (students and external users)
 Route::middleware(['jwt_auth','must_be:student,external_user'])->group(function () {
-    Route::get('/quiz/all', [UserController::class, 'getQuizzes']); // gets all currently assigned quizzes for user
+    Route::get('/assignments/pending', [AssignmentController::class, 'getPendingAssignments']); // gets all current assignments for user
+    Route::get('/assignments/completed', [AssignmentController::class, 'getCompletedAssignments']); // gets all done assignments for user
+    Route::get('/assignment/{name}', [AssignmentController::class, 'getAssignment']);
+    Route::get('/assignment/{name}/questions', [AssignmentController::class, 'getAssignmentQuestions']);
+    Route::post('/assignment/{name}/submit', [AssignmentController::class, 'submitAssignment']);
+    Route::get('/assignment/{name}/review', [AssignmentController::class, 'getAssignmentReview']);
+    // Route::post('/admin/quiz/{title}/notify', [QuizController::class, 'notify']);
 });
 
 

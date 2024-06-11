@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Submission</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+        }
+        .container {
+            width: 50%;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .header {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .score {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .progress-bar {
+            width: 100%;
+            background: #ddd;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .progress-bar-inner {
+            height: 20px;
+            width: 85%; /* example score percentage */
+            background: #4caf50;
+        }
+        .buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        .button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .button-review {
+            background: #4caf50;
+            color: #fff;
+        }
+        .button-retake {
+            background: #2196f3;
+            color: #fff;
+        }
+        .button-home {
+            background: #777;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">Quiz Title</div>
+        <div class="subtitle">Quiz Submission</div>
+
+        <div class="section">
+            <div class="section-title">User Information</div>
+            <div>User Name: John Doe</div>
+            <div>Date: 2024-06-07</div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Your Score</div>
+            <div class="score">85/100</div>
+            <div class="progress-bar">
+                <div class="progress-bar-inner"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Time Taken</div>
+            <div>Time Taken: 15 minutes 30 seconds</div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Summary and Feedback</div>
+            <div>Correct Answers: 8</div>
+            <div>Incorrect Answers: 2</div>
+            <div>Comments: Great job! Keep practicing.</div>
+        </div>
+
+        <div class="buttons">
+            <button class="button button-review">Review Quiz</button>
+            <button class="button button-retake">Retake Quiz</button>
+            <button class="button button-home">Home</button>
+        </div>
+    </div>
+</body>
+</html>
